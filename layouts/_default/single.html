@@ -1,0 +1,64 @@
+{{ define "main" }}
+<article class="space-y-8">
+  <!-- Article Header -->
+  <header class="space-y-4">
+    <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-500">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">
+        {{ .Date.Format "January 2, 2006" }}
+      </time>
+      {{ if .Params.tags }}
+        <span>&middot;</span>
+        <span>{{ .ReadingTime }} min read</span>
+      {{ end }}
+    </div>
+
+    <h1 class="text-4xl font-bold leading-tight">{{ .Title }}</h1>
+
+    {{ with .Description }}
+      <p class="text-xl text-gray-600 dark:text-gray-400">{{ . }}</p>
+    {{ end }}
+
+    {{ with .Params.tags }}
+      <div class="flex flex-wrap gap-2">
+        {{ range . }}
+          <a href="{{ "tags/" | relLangURL }}{{ . | urlize }}/"
+             class="text-sm px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            {{ . }}
+          </a>
+        {{ end }}
+      </div>
+    {{ end }}
+  </header>
+
+  <!-- Article Content -->
+  <div class="prose prose-lg dark:prose-invert max-w-none">
+    {{ .Content }}
+  </div>
+
+  <!-- Article Footer -->
+  <footer class="pt-8 border-t border-gray-200 dark:border-gray-800">
+    <!-- Post Navigation -->
+    <nav class="flex flex-col sm:flex-row justify-between gap-4">
+      {{ with .PrevInSection }}
+        <a href="{{ .Permalink }}" class="group flex-1">
+          <span class="text-sm text-gray-500 dark:text-gray-500">&larr; Previous</span>
+          <span class="block font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {{ .Title }}
+          </span>
+        </a>
+      {{ else }}
+        <div class="flex-1"></div>
+      {{ end }}
+
+      {{ with .NextInSection }}
+        <a href="{{ .Permalink }}" class="group flex-1 text-right">
+          <span class="text-sm text-gray-500 dark:text-gray-500">Next &rarr;</span>
+          <span class="block font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {{ .Title }}
+          </span>
+        </a>
+      {{ end }}
+    </nav>
+  </footer>
+</article>
+{{ end }}

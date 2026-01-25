@@ -1,0 +1,51 @@
+{{ define "main" }}
+<div class="space-y-12">
+  <!-- Hero Section -->
+  <section class="py-8">
+    <h1 class="text-4xl font-bold mb-4">{{ .Site.Title }}</h1>
+    <p class="text-xl text-gray-600 dark:text-gray-400">
+      {{ .Site.Params.description }}
+    </p>
+  </section>
+
+  <!-- Recent Posts -->
+  <section>
+    <h2 class="text-2xl font-semibold mb-6">Recent Posts</h2>
+    <div class="space-y-8">
+      {{ $posts := where .Site.RegularPages "Section" "posts" }}
+      {{ range first 5 $posts }}
+        <article class="group">
+          <a href="{{ .Permalink }}" class="block">
+            <time class="text-sm text-gray-500 dark:text-gray-500" datetime="{{ .Date.Format "2006-01-02" }}">
+              {{ .Date.Format "January 2, 2006" }}
+            </time>
+            <h3 class="text-xl font-semibold mt-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              {{ .Title }}
+            </h3>
+            {{ with .Description }}
+              <p class="text-gray-600 dark:text-gray-400 mt-2">{{ . }}</p>
+            {{ end }}
+            {{ with .Params.tags }}
+              <div class="flex flex-wrap gap-2 mt-3">
+                {{ range . }}
+                  <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{{ . }}</span>
+                {{ end }}
+              </div>
+            {{ end }}
+          </a>
+        </article>
+      {{ else }}
+        <p class="text-gray-600 dark:text-gray-400">No posts yet. Check back soon!</p>
+      {{ end }}
+    </div>
+
+    {{ if gt (len $posts) 5 }}
+      <div class="mt-8">
+        <a href="/posts/" class="text-blue-600 dark:text-blue-400 hover:underline">
+          View all posts &rarr;
+        </a>
+      </div>
+    {{ end }}
+  </section>
+</div>
+{{ end }}

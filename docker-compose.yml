@@ -1,0 +1,22 @@
+services:
+  blog:
+    image: ghcr.io/YOUR_USERNAME/blog:latest
+    container_name: blog
+    restart: unless-stopped
+    labels:
+      # Traefik configuration
+      - "traefik.enable=true"
+      - "traefik.http.routers.blog.rule=Host(`blog.example.com`)"
+      - "traefik.http.routers.blog.entrypoints=websecure"
+      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
+      - "traefik.http.services.blog.loadbalancer.server.port=80"
+      # Enable HSTS
+      - "traefik.http.middlewares.blog-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.blog-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.routers.blog.middlewares=blog-headers"
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    external: true

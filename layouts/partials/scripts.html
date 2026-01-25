@@ -1,0 +1,80 @@
+<!-- Dark Mode Toggle -->
+<script>
+  const themeToggle = document.getElementById('theme-toggle');
+
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.theme = isDark ? 'dark' : 'light';
+  });
+
+  // Watch for system preference changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!('theme' in localStorage)) {
+      document.documentElement.classList.toggle('dark', e.matches);
+    }
+  });
+</script>
+
+<!-- Mobile Menu Toggle -->
+<script>
+  const mobileMenuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  mobileMenuButton.addEventListener('click', () => {
+    mobileMenu.classList.toggle('hidden');
+  });
+</script>
+
+<!-- Search Modal -->
+<script>
+  const searchButton = document.getElementById('search-button');
+  const searchModal = document.getElementById('search-modal');
+  const searchBackdrop = document.getElementById('search-backdrop');
+
+  function openSearch() {
+    searchModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    // Focus search input after Pagefind loads it
+    setTimeout(() => {
+      const input = searchModal.querySelector('input');
+      if (input) input.focus();
+    }, 100);
+  }
+
+  function closeSearch() {
+    searchModal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  searchButton.addEventListener('click', openSearch);
+  searchBackdrop.addEventListener('click', closeSearch);
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
+      closeSearch();
+    }
+    // Open search with Cmd/Ctrl + K
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      if (searchModal.classList.contains('hidden')) {
+        openSearch();
+      } else {
+        closeSearch();
+      }
+    }
+  });
+</script>
+
+<!-- Pagefind Search -->
+<link href="/pagefind/pagefind-ui.css" rel="stylesheet">
+<script src="/pagefind/pagefind-ui.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    new PagefindUI({
+      element: "#search",
+      showSubResults: true,
+      showImages: false,
+    });
+  });
+</script>
