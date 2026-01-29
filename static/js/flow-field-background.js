@@ -1,6 +1,8 @@
 const CONFIG = {
   particleCount: 150,
+  mobileParticleCount: 60,
   particleSize: 2,
+  mobileParticleSize: 3,
   particleColor: '#6366f1',
   particleAlpha: 0.6,
   noiseScale: 0.003,
@@ -16,6 +18,9 @@ let canvas, ctx, particles, noise;
 let time = 0;
 let mouseX = -9999, mouseY = -9999;
 let lastTime = performance.now();
+let isAnimating = false;
+let animationFrameId = null;
+let isMobile = false;
 
 function setupCanvas() {
   canvas = document.createElement('canvas');
@@ -30,7 +35,8 @@ function setupCanvas() {
   ctx = canvas.getContext('2d');
 
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', handleResize);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 }
 
 function resizeCanvas() {
@@ -40,11 +46,12 @@ function resizeCanvas() {
   canvas.style.width = window.innerWidth + 'px';
   canvas.style.height = window.innerHeight + 'px';
   ctx.scale(dpr, dpr);
+  createParticles();
 }
 
 function createParticles() {
   particles = [];
-  const count = window.innerWidth < 768 ? Math.floor(CONFIG.particleCount * 0.5) : CONFIG.particleCount;
+  const count = isMobile ? CONFIG.mobileParticleCount : CONFIG.particleCount;
 
   for (let i = 0; i < count; i++) {
     particles.push({
@@ -107,12 +114,15 @@ function drawParticle(particle) {
   ctx.fillStyle = CONFIG.particleColor;
   ctx.globalAlpha = CONFIG.particleAlpha;
   ctx.beginPath();
-  ctx.arc(particle.x, particle.y, CONFIG.particleSize, 0, Math.PI * 2);
+  const size = isMobile ? CONFIG.mobileParticleSize : CONFIG.particleSize;
+  ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
   ctx.fill();
 }
 
 function animate() {
-  requestAnimationFrame(animate);
+  if (!isAnimating) return;
+
+  animationFrameId = requestAnimationFrame(animate);
 
   const currentTime = performance.now();
   const deltaTime = (currentTime - lastTime) / 16.67;
@@ -144,11 +154,45 @@ function trackMouse() {
   });
 }
 
+function startAnimation() {
+  if (!isAnimating) {
+    isAnimating = true;
+    lastTime = performance.now();
+    animate();
+  }
+}
+
+function stopAnimation() {
+  isAnimating = false;
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+}
+
+function handleVisibilityChange() {
+  if (document.hidden) {
+    stopAnimation();
+  } else {
+    startAnimation();
+  }
+}
+
+let resizeTimeout;
+function handleResize() {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    resizeCanvas();
+  }, 100);
+}
+
 function init() {
   if (typeof window.noise === 'undefined') {
     console.error('noise.js not loaded');
     return;
   }
+
+  isMobile = window.matchMedia('(pointer: coarse)').matches;
 
   noise = window.noise;
   noise.seed(Math.random());
@@ -156,7 +200,7 @@ function init() {
   setupCanvas();
   createParticles();
   trackMouse();
-  animate();
+  startAnimation();
 }
 
 if (document.readyState === 'loading') {
