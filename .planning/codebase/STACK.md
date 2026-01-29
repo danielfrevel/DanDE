@@ -1,95 +1,109 @@
 # Technology Stack
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
 ## Languages
 
 **Primary:**
-- TOML - Hugo configuration (`hugo.toml`)
-- Markdown - Content authoring for blog posts
-- HTML - Theme templates
-- CSS - Styling with Tailwind CSS
+- HTML - Templates via Hugo (Go templating language)
+- CSS - Tailwind CSS with PostCSS processing
+- JavaScript - Client-side animation and interactivity
 
 **Secondary:**
-- JavaScript - Build tooling (Node.js scripts)
-- Shell - Docker entrypoint and CI scripts
+- TOML - Hugo configuration (`hugo.toml`)
+- YAML - GitHub Actions workflows (`.github/workflows/deploy.yml`)
 
 ## Runtime
 
 **Environment:**
-- Node.js 24.13.0 - Build tooling and asset processing
-- Hugo 0.154.5+extended - Static site generator
+- Hugo static site generator (installed via Nix)
+- Node.js - Used for npm dependencies and build tooling
+- nginx - Web server (Alpine Linux based in production)
 
 **Package Manager:**
-- npm 11.6.2 - Node.js package management
-- Lockfile: `package-lock.json` present
+- npm - JavaScript package management
+- Lockfile: `package-lock.json` (present)
 
 ## Frameworks
 
 **Core:**
-- Hugo 0.154.5 - Static site generation, templating, markdown processing
+- Hugo - Static site generator for blog platform
 - Tailwind CSS 3.4.0 - Utility-first CSS framework
-
-**Styling & Processing:**
 - PostCSS 8.4.32 - CSS transformation pipeline
-- Autoprefixer 10.4.16 - CSS vendor prefix automation
-- @tailwindcss/typography 0.5.10 - Typography plugin for Tailwind
+
+**Styling:**
+- @tailwindcss/typography 0.5.10 - Prose styling plugin for markdown content
+- autoprefixer 10.4.16 - Vendor prefix management
 
 **Search:**
-- Pagefind 1.0.4 - Static site search indexing
+- Pagefind 1.0.4 - Client-side search index generation and UI
 
 ## Key Dependencies
 
 **Critical:**
-- `pagefind` 1.0.4 - Generates searchable index from built static site during Docker build
-- `tailwindcss` 3.4.0 - CSS utility framework with dark mode support
-- `postcss` 8.4.32 - CSS processing for Tailwind compilation
+- Hugo with extended features (via `hugomods/hugo:exts` Docker image) - Site generation with asset pipeline
+- tailwindcss 3.4.0 - CSS generation for design system
+- postcss-cli 11.0.0 - CLI tool for PostCSS pipeline execution
+- pagefind 1.0.4 - Static search functionality without backend
 
-**Infrastructure:**
-- `postcss-cli` 11.0.0 - CLI for PostCSS processing
-- `autoprefixer` 10.4.16 - Vendor prefix addition for CSS compatibility
+**Build Tools:**
+- npm - Dependency management
+- Docker & Docker Compose - Containerization and orchestration
 
 ## Configuration
 
 **Environment:**
-- Hugo configuration: `hugo.toml` - Site metadata, pagination, syntax highlighting (Dracula theme), RSS feeds, taxonomies, menus
-- Tailwind configuration: `tailwind.config.js` - Content sources, dark mode via CSS class, extended fonts (Inter, JetBrains Mono), typography customization
-- PostCSS configuration: `postcss.config.js` - Simple pipeline with Tailwind and Autoprefixer
-- Nix development shell: `flake.nix` - Provides Hugo and Node.js in dev environment
+- Nix Flake (`flake.nix`) for reproducible development environment
+  - Provides: Hugo, Node.js
+- Hugo configuration in `hugo.toml`:
+  - Base URL: `https://blog.danfrevel.de/`
+  - Language: English (US)
+  - Pagination: 10 items per page
+  - Markup: Chroma syntax highlighting with Dracula style
+  - Taxonomies: Tags and categories
+  - RSS output enabled
 
 **Build:**
-- `Dockerfile` - Multi-stage build: Hugo build stage, then nginx runtime with compiled site
-- `docker-compose.yml` - Service orchestration for containerized blog
-- `.github/workflows/deploy.yml` - CI/CD pipeline
+- `tailwind.config.js` - Tailwind CSS configuration with fluid typography, dark mode support
+- `postcss.config.js` - PostCSS plugin pipeline (tailwindcss, autoprefixer)
+- `Dockerfile` - Multi-stage build: Hugo builder + nginx runtime
+- `nginx.conf` - Web server configuration with caching, compression, security headers
 
 ## Platform Requirements
 
 **Development:**
-- Nix flakes support (flake.nix provides hermetic Hugo and Node.js environment)
-- Git for version control
+- Nix (for reproducible environment via `flake.nix`)
+- Node.js (managed via Nix)
+- Hugo with extended features
 
 **Production:**
-- Docker and Docker Compose for containerization
-- Traefik reverse proxy for routing and SSL/TLS (Let's Encrypt)
-- Nginx Alpine as web server in production container
-- External Docker registry: `ghcr.io` (GitHub Container Registry) for image storage
+- Docker - Container runtime
+- Traefik reverse proxy (for SSL/TLS termination via docker-compose)
+- Nginx alpine - Lightweight web server in container
+- Linux host for Docker Compose orchestration
 
-## Build Process
+## Build & Deploy Process
 
-**Development Commands:**
+**Local Development:**
 ```bash
-npm run dev       # Hugo server with drafts and future posts
-npm run build     # Hugo minified build
-npm run build:search  # Pagefind search index generation
+npm install                    # Install CSS/search dependencies
+hugo server --buildDrafts      # Start dev server with draft posts
 ```
 
-**Production Build Flow:**
-1. Multi-stage Docker build using `hugomods/hugo:exts` builder image
-2. npm install of Tailwind and PostCSS dependencies
-3. Hugo site generation with minification
-4. Pagefind search index generation
-5. Nginx Alpine runtime serving compiled HTML from `/public`
+**Production Build:**
+```bash
+hugo --minify                  # Build optimized static site
+npx pagefind --site public    # Generate search index
+docker build .                 # Build Docker image
+docker push                    # Push to ghcr.io registry
+```
+
+**Deployment:**
+- GitHub Actions CI/CD (`deploy.yml`)
+- Builds Docker image → Pushes to GitHub Container Registry (ghcr.io)
+- SSH deploys to remote server via Docker Compose
+- Traefik handles HTTPS with Let's Encrypt certificates
 
 ---
 
-*Stack analysis: 2026-01-28*
+*Stack analysis: 2026-01-29*

@@ -1,283 +1,228 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
 ## Directory Layout
 
 ```
 /home/dan/code/blog/
-├── content/              # Blog content (Markdown)
-│   ├── posts/            # Blog post collection
-│   ├── about.md          # Single page
-│   └── _index.md         # Posts section listing page
-├── layouts/              # Hugo templates (HTML)
-│   ├── _default/         # Default templates for content types
-│   ├── partials/         # Reusable template components
-│   ├── posts/            # Post-specific templates (if any)
-│   └── index.html        # Home page template
-├── assets/               # Assets processed by Hugo
+├── content/                    # Author-facing markdown content
+│   ├── posts/                  # Blog post articles
+│   │   └── _index.md          # Post section metadata
+│   └── about.md               # About page
+├── layouts/                    # Hugo templates (HTML + Go template syntax)
+│   ├── _default/              # Default templates for content types
+│   │   ├── baseof.html        # Base template (page wrapper)
+│   │   ├── single.html        # Single page/post template
+│   │   └── list.html          # List/archive template
+│   ├── index.html             # Homepage template
+│   ├── 404.html               # 404 error page
+│   └── partials/              # Reusable template components
+│       ├── head.html          # <head> section
+│       ├── header.html        # Navigation header
+│       ├── footer.html        # Footer
+│       └── scripts.html       # JavaScript initialization
+├── archetypes/                # Template stubs for new content
+│   └── default.md             # Default archetype for new posts
+├── assets/                    # CSS and preprocessed assets
 │   └── css/
-│       └── main.css      # Tailwind directives, custom CSS
-├── archetypes/           # Templates for `hugo new` command
-│   └── default.md        # Default post template
-├── static/               # Static files copied as-is
-├── .github/              # GitHub configuration
-│   └── workflows/        # CI/CD automation
-│       └── deploy.yml    # Build and deploy workflow
-├── .planning/            # GSD planning documents
-│   └── codebase/         # This folder (generated analysis)
-├── public/               # Generated static site (build output)
-├── resources/            # Hugo cache and temporary files
-├── node_modules/         # npm dependencies
-├── hugo.toml             # Hugo configuration
-├── package.json          # npm scripts and dependencies
-├── package-lock.json     # npm lockfile
-├── Dockerfile            # Multi-stage Docker build
-├── docker-compose.yml    # Container orchestration config
-├── nginx.conf            # nginx web server config
-├── tailwind.config.js    # Tailwind CSS configuration
-├── postcss.config.js     # PostCSS plugin configuration
-├── .gitignore            # Git ignore rules
-├── flake.nix             # Nix environment (optional)
-├── flake.lock            # Nix lockfile (optional)
-├── USAGE.md              # User documentation
-└── README files...       # (various node_modules)
+│       └── main.css           # Tailwind directives + custom CSS
+├── static/                    # Static files (copied as-is to public)
+│   └── js/
+│       ├── perlin.js          # Perlin noise library
+│       └── flow-field-background.js  # Animated background
+├── public/                    # Generated static site (build output)
+│   ├── css/                   # Compiled CSS
+│   ├── js/                    # JavaScript bundles
+│   ├── posts/                 # Generated post pages
+│   ├── tags/                  # Generated tag pages
+│   ├── categories/            # Generated category pages
+│   └── index.html             # Generated homepage
+├── resources/                 # Hugo resource cache (build artifacts)
+│   └── _gen/
+│       └── assets/
+│           └── css/           # Processed CSS output
+├── node_modules/              # npm dependencies
+├── .planning/                 # GSD planning documents
+│   └── codebase/              # Architecture/structure analysis
+├── .github/                   # GitHub workflows
+│   └── workflows/             # CI/CD configurations
+├── .claude/                   # Claude configuration
+├── docker-compose.yml         # Docker Compose for local dev
+├── Dockerfile                 # Docker image definition
+├── flake.nix                  # Nix dev environment
+├── hugo.toml                  # Hugo configuration
+├── package.json               # npm scripts and dependencies
+├── postcss.config.js          # PostCSS plugins (Tailwind, autoprefixer)
+├── tailwind.config.js         # Tailwind CSS configuration
+├── nginx.conf                 # Nginx web server configuration
+├── USAGE.md                   # Project documentation
+└── .gitignore                 # Git ignore rules
 ```
 
 ## Directory Purposes
 
-**`content/`:**
-- Purpose: Source of truth for all blog content
-- Contains: Markdown (.md) files with YAML frontmatter
-- Key files:
-  - `content/posts/*.md` - Individual blog posts
-  - `content/posts/_index.md` - Index for posts section
-  - `content/about.md` - About page
-- Versioned in git; changes trigger site rebuilds
+**content/:**
+- Purpose: Author-facing markdown files; single source of truth for blog posts
+- Contains: `.md` files with YAML frontmatter (title, date, tags, description)
+- Key files: `posts/_index.md` (post section metadata), `about.md` (about page)
 
-**`layouts/`:**
-- Purpose: HTML templates that define site structure and appearance
-- Contains: Hugo template files (.html) organized by function
-- Key files:
-  - `layouts/_default/baseof.html` - Base template wrapping all pages
-  - `layouts/_default/single.html` - Single post/page template
-  - `layouts/_default/list.html` - Post listing template
-  - `layouts/index.html` - Home page template
-  - `layouts/404.html` - 404 error page
-  - `layouts/partials/head.html` - HTML head section (meta, styles)
-  - `layouts/partials/header.html` - Navigation header with menu
-  - `layouts/partials/footer.html` - Footer with copyright and links
-  - `layouts/partials/scripts.html` - JavaScript initialization
-- `layouts/posts/` - Post-specific overrides (if needed)
+**layouts/:**
+- Purpose: Hugo templates that define how content is rendered to HTML
+- Contains: `.html` files with Hugo template syntax ({{ }}, if/range/with blocks)
+- Key sections:
+  - `_default/`: Generic templates inherited by content types
+  - `partials/`: Reusable template components imported via `{{ partial }}`
+  - Root: `index.html` (homepage), `404.html` (error page)
 
-**`assets/css/`:**
-- Purpose: Stylesheet source code processed by PostCSS/Tailwind
-- Contains: CSS with Tailwind directives
-- Key files:
-  - `assets/css/main.css` - Entry point for Tailwind, custom CSS, scrollbar styling
-- Compiled to final CSS during build
+**assets/css/:**
+- Purpose: Source CSS files processed by Tailwind/PostCSS during build
+- Contains: `main.css` with @tailwind directives and custom @layer rules
+- Processing: `main.css` → Tailwind processor → PostCSS (autoprefixer) → minified output
 
-**`archetypes/`:**
-- Purpose: Templates for generating new content with `hugo new`
-- Contains: Markdown templates with default frontmatter
-- Key files:
-  - `archetypes/default.md` - Template for new posts (includes title, date, draft, tags, description)
-- Not compiled into site; used only as scaffolding
+**static/js/:**
+- Purpose: Client-side JavaScript files included as-is in final output
+- Contains: Library code (perlin.js) and feature implementations (flow-field-background.js)
+- Not processed: Files serve as static assets, no bundling/transpilation
 
-**`static/`:**
-- Purpose: Static files copied to output unchanged
-- Contains: Images, icons, fonts, any file that needs as-is copying
-- Referenced in pages as `/filename.ext`
+**archetypes/:**
+- Purpose: Template stubs used by `hugo new` command
+- Contains: `default.md` with YAML structure for new posts
+- Usage: `hugo new posts/my-post.md` creates post with archetype structure
 
-**`.github/workflows/`:**
-- Purpose: GitHub Actions CI/CD automation
-- Contains: YAML workflow definitions
-- Key files:
-  - `.github/workflows/deploy.yml` - Build and deploy to server
-    - Builds Docker image on push to main
-    - Pushes to GitHub Container Registry
-    - SSH into server and runs docker-compose
+**public/:**
+- Purpose: Generated static site (build output, not committed)
+- Generated during: `npm run build` or `hugo build` command
+- Structure: Mirrors content structure with `.html` files
 
-**`.planning/codebase/`:**
-- Purpose: GSD codebase analysis documents
-- Generated by GSD tools; should not be edited manually
-- Contains: ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md, STACK.md, INTEGRATIONS.md
-
-**`public/`:**
-- Purpose: Build output - the compiled static site
-- Generated by: `npm run build`, `hugo --minify`
-- Not versioned (in .gitignore)
-- Contains:
-  - HTML pages
-  - Compiled CSS
-  - JavaScript
-  - Pagefind search index (`public/pagefind/`)
-
-**`resources/`:**
-- Purpose: Hugo cache and build artifacts
-- Generated automatically
-- Not versioned
+**resources/:**
+- Purpose: Hugo build cache for asset processing
+- Generated: Automatically by Hugo during build
+- Contains: Processed CSS, fingerprinted assets
 
 ## Key File Locations
 
 **Entry Points:**
-
-- `hugo.toml`: Hugo configuration entry point (defines site title, baseURL, menu, pagination, syntax highlighting)
-- `package.json`: npm scripts entry point (defines dev, build, build:search commands)
-- `Dockerfile`: Docker build entry point (starts with Hugo build stage)
-- `.github/workflows/deploy.yml`: CI/CD entry point (triggered by push to main)
+- `hugo.toml`: Hugo configuration defining baseURL, output formats, taxonomies, menus
+- `layouts/index.html`: Homepage rendering (hero + recent posts)
+- `layouts/_default/single.html`: Single post/page rendering
+- `layouts/_default/list.html`: Post list/archive rendering
 
 **Configuration:**
-
-- `hugo.toml`: Site configuration (title, description, author, baseURL, menu, syntax style)
-- `tailwind.config.js`: Tailwind CSS settings (dark mode, custom fonts, typography plugin)
-- `postcss.config.js`: PostCSS processing order (tailwindcss, autoprefixer)
-- `docker-compose.yml`: Container configuration (image, labels, Traefik routing, networking)
-- `nginx.conf`: Web server config (caching, compression, security headers, URL rewrites)
+- `hugo.toml`: Site metadata, output formats, menu structure, markup settings
+- `package.json`: npm scripts (dev, build, build:search)
+- `tailwind.config.js`: Theme extensions, font families, fluid typography
+- `postcss.config.js`: PostCSS plugin pipeline (Tailwind → autoprefixer)
+- `flake.nix`: Nix dev environment (Hugo, Node)
 
 **Core Logic:**
-
-- `layouts/_default/baseof.html`: Global page structure, partial includes, outer HTML
-- `layouts/index.html`: Home page layout (hero, recent posts list)
-- `layouts/_default/single.html`: Individual post/page layout (header, content, footer navigation)
-- `layouts/_default/list.html`: Post archive layout (section title, post listing, pagination)
-- `layouts/partials/head.html`: Metadata, fonts, CSS, dark mode initialization
-- `layouts/partials/header.html`: Navigation bar with search, dark mode toggle, mobile menu
-- `layouts/partials/footer.html`: Copyright, RSS link
-- `layouts/partials/scripts.html`: Dark mode toggle, mobile menu, search modal, Pagefind initialization
+- `layouts/partials/head.html`: Meta tags, CSS loading, dark mode detection script
+- `layouts/partials/header.html`: Navigation, search button, theme toggle, mobile menu
+- `layouts/partials/scripts.html`: Pagefind setup, theme toggle handler, search modal, animation init
+- `static/js/flow-field-background.js`: Animated background (particles + Perlin noise + mouse tracking)
+- `static/js/perlin.js`: Perlin noise implementation (dependency for flow-field)
 
 **Styling:**
+- `assets/css/main.css`: Tailwind directives + custom scrollbar + code block styles
+- `tailwind.config.js`: Fonts (Inter, JetBrains Mono), fluid typography scales, typography plugin
 
-- `assets/css/main.css`: Tailwind directives, custom CSS for scrollbar, code blocks, search highlight
-- `tailwind.config.js`: Font definitions, dark mode, typography customization
-
-**Testing:**
-
-- No test files - static site doesn't have unit tests
+**Content:**
+- `content/posts/_index.md`: Post section metadata
+- `content/about.md`: About page
+- `archetypes/default.md`: New post template
 
 ## Naming Conventions
 
 **Files:**
-
-- **Posts:** `content/posts/my-post-title.md` (kebab-case for readability in URLs)
-- **Pages:** `content/page-name.md` (kebab-case)
-- **Templates:** `layouts/_default/single.html`, `layouts/partials/component-name.html` (lowercase with hyphens for partials)
-- **Config:** `hugo.toml`, `tailwind.config.js`, `postcss.config.js` (lowercase, .config pattern for tool configs)
-- **Markdown frontmatter keys:** lowercase with no spaces (`title`, `description`, `tags`, `draft`)
+- Layouts: `lowercase.html` (baseof.html, single.html)
+- Partials: `lowercase.html` in `partials/` directory (header.html, footer.html)
+- Archetype: `lowercase.md` (default.md)
+- Config: `lowercase.js` or `.toml` (tailwind.config.js, hugo.toml)
+- Content: `lowercase-with-dashes.md` (about.md, implied post slugs)
+- Static JS: `kebab-case.js` (perlin.js, flow-field-background.js)
 
 **Directories:**
+- Hugo standard: `layouts`, `content`, `static`, `archetypes`, `assets`
+- Sections: `posts/`, `tags/`, `categories/`
+- CSS: `css/` under assets
+- JavaScript: `js/` under static
+- Partials: `partials/` under layouts
 
-- **Content:** `content/posts/`, `content/pages/` (plural, lowercase)
-- **Templates:** `layouts/_default/`, `layouts/partials/` (underscore prefix for Hugo system directories)
-- **Assets:** `assets/css/` (plural, asset type subdirectories)
-- **Output:** `public/`, `resources/` (Hugo conventions)
-
-**CSS Classes:**
-
-- Tailwind utilities: `text-4xl`, `font-bold`, `dark:bg-gray-900` (kebab-case, vendor prefixes like `dark:`, `sm:`)
-- Custom classes: `.highlight pre`, `mark` (rare, used only when Tailwind insufficient)
-
-**Hugo Variables/Functions:**
-
-- Site config: `.Site.Title`, `.Site.Params.description` (PascalCase for dot-notation access)
-- Page variables: `.Title`, `.Content`, `.Date`, `.Permalink` (PascalCase)
-- Built-in functions: `where`, `range`, `with` (lowercase, Hugo-specific syntax)
+**Template Variables:**
+- Hugo context: `.Title`, `.Content`, `.Date`, `.Params`, `.Site`, `.Pages`
+- Custom frontmatter: `.Description`, `.Params.tags`
+- Hugo functions: `now`, `where`, `first`, `range`, `with`
 
 ## Where to Add New Code
 
 **New Blog Post:**
-- Location: `content/posts/my-post-title.md`
-- Frontmatter: Use archetype from `archetypes/default.md` as template
-- Content: Markdown with headings, code blocks, links
-- Testing: Visual preview in `npm run dev`
+- Command: `hugo new posts/post-slug.md`
+- Location: `/content/posts/post-slug.md`
+- Structure: YAML frontmatter (title, date, tags, description) + Markdown body
+- Template used: `layouts/_default/single.html`
 
-**New Page (not a post):**
-- Location: `content/page-name.md` (in root of content/)
-- Frontmatter: Similar to posts, but no tags typically
-- Will render with `layouts/_default/single.html` template
-- Add menu link in `hugo.toml` under `[[menus.main]]`
+**New Page (Like About):**
+- Command: `hugo new my-page.md`
+- Location: `/content/my-page.md`
+- Structure: YAML frontmatter + Markdown body
+- Template: Uses nearest template (single.html or custom layout)
 
-**New Template/Layout:**
-- For page-specific overrides: `layouts/[section]/[layout-type].html`
-- For reusable components: `layouts/partials/component-name.html` and include with `{{ partial "component-name.html" . }}`
-- Base structure: All pages inherit from `layouts/_default/baseof.html`
-- Context: Access page variables via `.` dot notation
+**New Template Layout:**
+- Location: `/layouts/` or `/layouts/partials/`
+- Naming: `lowercase.html`
+- Pattern: Use Hugo context variables (`.Title`, `.Content`, etc.)
+- Inheritance: Child templates define `{{ define "main" }}...{{ end }}`
 
-**Custom Styling:**
-- **Simple changes:** Add Tailwind classes to HTML in templates
-- **Complex styling:** Add custom CSS to `assets/css/main.css` in `@layer components` block
-- **Dark mode:** Use `dark:` prefix on Tailwind classes (e.g., `dark:bg-gray-900`)
-- **Typography:** Prose styling via `@tailwindcss/typography` plugin (applied to `.prose` class in single.html)
+**New Partial (Reusable Component):**
+- Location: `/layouts/partials/component-name.html`
+- Usage: `{{ partial "component-name.html" . }}` passes context
+- Example: If adding a sidebar, create `partials/sidebar.html` and call from baseof.html
 
-**New Feature (dark mode, search, mobile menu):**
-- JavaScript location: `layouts/partials/scripts.html`
-- Pattern: Initialize on DOMContentLoaded, use vanilla JS (no framework)
-- State management: localStorage for persistence, DOM classes for UI state
-- Keyboard shortcuts: Listen to `keydown` events
+**New Client-Side Feature:**
+- Location: `/static/js/feature-name.js` or inline in `layouts/partials/scripts.html`
+- Pattern: Vanilla JavaScript with no bundler (direct file serving)
+- Init: Add `<script src="/js/feature-name.js"></script>` to appropriate partial or baseof.html
 
-**Utilities/Helpers:**
-- No separate utilities directory (Hugo handles most operations)
-- Reusable template logic: Extract to `layouts/partials/` partial
-- Content helpers: Use Hugo template functions (where, range, if, with)
+**New Style Rule:**
+- Location: `/assets/css/main.css`
+- Pattern: Use `@layer` to organize (base, components, utilities)
+- Approach: Prefer Tailwind utility classes in templates over custom CSS when possible
+- If custom needed: Add to `@layer components` for reusable classes, `@layer utilities` for one-offs
+
+**New Dependency:**
+- npm: Add to `package.json` devDependencies, reference in build scripts or PostCSS config
+- Hugo: Update flake.nix or install locally
 
 ## Special Directories
 
-**`node_modules/`:**
-- Purpose: npm dependency code
-- Generated: Yes (by `npm install`)
+**public/:**
+- Purpose: Generated static site output
+- Generated: Automatically by Hugo build
 - Committed: No (in .gitignore)
-- Contains: tailwindcss, postcss, autoprefixer, pagefind
-- Clean: `rm -rf node_modules/ && npm install`
+- Cleaning: Delete and rebuild with `npm run build`
 
-**`public/`:**
-- Purpose: Compiled static site ready for serving
-- Generated: Yes (by `hugo` or `npm run build`)
+**resources/:**
+- Purpose: Hugo build cache (processed assets)
+- Generated: Automatically by Hugo
 - Committed: No (in .gitignore)
-- Contains: HTML pages, CSS, JS, images, pagefind search index
-- Clean: `rm -rf public/` (Hugo recreates on next build)
+- Purpose: Speed up rebuilds by caching processed CSS/JS
 
-**`resources/`:**
-- Purpose: Hugo build cache and processed assets
-- Generated: Yes (by Hugo)
+**node_modules/:**
+- Purpose: npm package dependencies
+- Generated: By `npm install`
 - Committed: No (in .gitignore)
-- Contains: Intermediate CSS, compiled templates, asset fingerprints
-- Clean: Safe to delete; Hugo will regenerate
+- Contents: Tailwind, PostCSS, Pagefind, autoprefixer
 
-**`.git/`:**
-- Purpose: Git version control metadata
-- Contains: Commit history, branches, remotes
-- Always committed: Yes
-- Do not edit manually
+**.git/:**
+- Purpose: Git version control
+- Contents: Commit history, branches, configuration
+- Key files: `.gitignore` defines excluded files (node_modules, public, resources)
 
-**`.github/`:**
-- Purpose: GitHub-specific configuration
-- Committed: Yes (workflows drive CI/CD)
-- Contains: GitHub Actions workflows, issue templates (if any)
-
-## Build Artifact Locations
-
-**CSS Output:**
-- Generated: During `npm run build` or `npm run dev`
-- Location: `resources/_gen/assets/css/` (Hugo cache) → linked in `head.html` via `$css.RelPermalink`
-- Fingerprinting: Added in production (integrity hash for subresource integrity)
-
-**Search Index:**
-- Generated: By `npm run build:search` (must run after `hugo`)
-- Location: `public/pagefind/` (contains pagefind-ui.js, pagefind.js, fragment.* files)
-- Accessed: Via `<script src="/pagefind/pagefind-ui.js"></script>` in `scripts.html`
-
-**HTML Output:**
-- Generated: By `hugo` command
-- Locations:
-  - `public/index.html` (home page)
-  - `public/posts/` (post pages)
-  - `public/about/index.html` (about page - Hugo creates directory structure)
-
-**Static Files:**
-- Copied from: `static/` directory
-- Output: To `public/` root (preserving directory structure)
-- Cache headers: 1 year for versioned assets (nginx config handles this)
+**.planning/codebase/:**
+- Purpose: GSD architecture/analysis documents
+- Contents: ARCHITECTURE.md, STRUCTURE.md (this file), CONVENTIONS.md, TESTING.md, CONCERNS.md
+- Committed: Yes (planning documentation)
 
 ---
 
-*Structure analysis: 2026-01-28*
+*Structure analysis: 2026-01-29*

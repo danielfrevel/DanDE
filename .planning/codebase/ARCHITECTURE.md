@@ -1,231 +1,193 @@
 # Architecture
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
 ## Pattern Overview
 
-**Overall:** Static Site Generator (SSG) with Hugo + Build Pipeline
+**Overall:** Static Site Generation with Hugo + Client-side Interactivity
 
 **Key Characteristics:**
-- Content-as-code: Markdown files converted to HTML at build time
-- Separation of content, templates, and styling
-- Client-side enhancement layers (JavaScript for interactivity without server)
-- Multi-stage Docker build with nginx static serving
+- Server-side rendering of static HTML via Hugo
+- Client-side JavaScript for interactive features (theme toggle, search, animations)
+- CSS-in-JS workflow via Tailwind CSS with PostCSS processing
+- Decoupled content (Markdown) from presentation (HTML templates)
+- Canvas-based animated background with Perlin noise
 
 ## Layers
 
 **Content Layer:**
-- Purpose: Define the source of truth for blog posts and pages
-- Location: `content/`
-- Contains: Markdown files with YAML frontmatter (posts, pages, taxonomies)
-- Depends on: None (input)
-- Used by: Hugo template engine
+- Purpose: Author-facing markdown files that define blog posts, pages, and metadata
+- Location: `/content/`
+- Contains: Markdown files (.md) with YAML frontmatter (title, date, tags, description)
+- Depends on: Hugo schema expectations (taxonomies, date format)
+- Used by: Hugo build process to generate pages
 
-**Template/Layout Layer:**
-- Purpose: Define HTML structure and page rendering
-- Location: `layouts/`
-- Contains: Hugo templates (.html files) organized by page type
-- Depends on: Content layer (accesses frontmatter, body), configuration
-- Used by: Hugo build process
+**Template Layer:**
+- Purpose: Hugo template files that transform content into HTML
+- Location: `/layouts/`
+- Contains: Hugo templating syntax (if, range, with blocks) + Tailwind CSS classes
+- Depends on: Hugo functions/variables (.Title, .Content, .Params, .Site)
+- Used by: Hugo renderer to generate pages during build
 
-**Styling Layer:**
-- Purpose: Define visual appearance and responsive behavior
-- Location: `assets/css/main.css`, `tailwind.config.js`
-- Contains: Tailwind CSS directives, custom CSS, typography
-- Depends on: Layout layer (scans .html files for class usage)
-- Used by: PostCSS/Tailwind build pipeline
+**Style Layer:**
+- Purpose: Styling and utility classes
+- Location: `/assets/css/main.css` (source) → compiled to public via Tailwind + PostCSS
+- Contains: Tailwind directives (@tailwind base/components/utilities), custom @layer rules
+- Depends on: Tailwind CSS framework, PostCSS plugins (autoprefixer)
+- Used by: Browser to style all pages
 
-**Build & Deployment Layer:**
-- Purpose: Compile site, optimize assets, containerize, deploy
-- Location: `Dockerfile`, `.github/workflows/deploy.yml`, `docker-compose.yml`
-- Contains: Multi-stage Docker build, GitHub Actions CI/CD, container orchestration
-- Depends on: All previous layers
-- Used by: Production environment
+**Client Script Layer:**
+- Purpose: Browser-side interactivity and animations
+- Location: `/static/js/` (checked in) and `/layouts/partials/scripts.html` (inline)
+- Contains: Vanilla JavaScript for theme toggle, search modal, mobile menu, flow field animation
+- Depends on: Pagefind library for search indexing
+- Used by: Browser to enhance UX during page interaction
 
-**Runtime/Static Serving Layer:**
-- Purpose: Serve static HTML/CSS/JS with caching and security headers
-- Location: `nginx.conf`, `public/` (generated)
-- Contains: Nginx configuration, static assets, search index
-- Depends on: Built artifacts from build layer
-- Used by: End users, crawlers
+**Static Assets Layer:**
+- Purpose: Pre-generated files copied directly to public directory
+- Location: `/static/`
+- Contains: JavaScript libraries (perlin.js, flow-field-background.js)
+- Depends on: None
+- Used by: Browser at runtime
+
+**Configuration Layer:**
+- Purpose: Build and deployment settings
+- Location: `hugo.toml`, `tailwind.config.js`, `postcss.config.js`, `package.json`
+- Contains: Site metadata, theme options, build pipelines
+- Depends on: Hugo, Node ecosystem expectations
+- Used by: Build system and development servers
 
 ## Data Flow
 
-**Build Time Flow:**
+**Build-time Flow:**
 
-1. **Content Input:** Markdown files in `content/` parsed by Hugo
-2. **Frontmatter Processing:** YAML metadata extracted (title, date, tags, description)
-3. **Template Rendering:** Hugo applies templates from `layouts/` to content
-   - Base template (`baseof.html`) wraps page content
-   - Partials (`head.html`, `header.html`, `footer.html`, `scripts.html`) included
-   - Page-specific templates (`index.html`, `single.html`, `list.html`) render main content
-4. **Asset Pipeline:**
-   - CSS (`main.css`) processed through PostCSS
-   - Tailwind scans `layouts/` and `content/` for class names
-   - Autoprefixer adds vendor prefixes
-   - Minified in production
-5. **Search Index Generation:** Pagefind crawls built HTML to create search index
-6. **Artifact Output:** All files written to `public/` directory
+1. **Content Input:** Markdown files in `/content/` + archetypes in `/archetypes/`
+2. **Hugo Processing:** Reads content, applies taxonomies (tags/categories), renders with templates
+3. **Template Rendering:** `/layouts/` templates process Hugo context (. object) → HTML
+4. **CSS Processing:** `main.css` + Tailwind config → PostCSS → minified output
+5. **Static Copy:** Files in `/static/` copied to `/public/`
+6. **Search Index:** Pagefind scans generated HTML → creates search index
+7. **Output:** Complete static site in `/public/`
 
-**Runtime Flow:**
+**Runtime Flow (Browser):**
 
-1. **Request Arrives:** Client requests URL at `blog.danfrevel.de`
-2. **Nginx Resolution:**
-   - Static assets (CSS, JS, fonts) served with long cache headers (1 year)
-   - HTML pages served with short cache (1 hour)
-   - Pagefind index cached for 1 day
-3. **Client Execution:**
-   - HTML loaded in browser
-   - Dark mode script runs immediately (prevents flash)
-   - Fonts preload from CDN
-   - View transition API setup for smooth navigation
-   - Pagefind UI initializes for search
-4. **User Interactions:**
-   - Dark mode toggle updates localStorage and DOM
-   - Mobile menu toggle shows/hides navigation
-   - Search modal opens with Cmd/Ctrl+K or button click
-   - Post navigation (prev/next) driven by Hugo template logic
+1. User requests page → Browser downloads HTML from server
+2. HTML loads CSS, JavaScript bundles
+3. `head.html` partial runs dark mode detection script (checks localStorage + system preference)
+4. `header.html` renders with theme toggle, search button, mobile menu
+5. Main content renders from layout (index.html, single.html, list.html)
+6. `scripts.html` initializes:
+   - Theme toggle listener
+   - Mobile menu toggle
+   - Search modal (Pagefind UI)
+   - Flow field canvas animation
+7. `flow-field-background.js` initializes: creates canvas, runs animation loop with Perlin noise
+8. User interactions trigger JavaScript handlers → DOM updates
 
-**State Management:**
+**Content Taxonomy Flow:**
 
-- **Theme preference:** Stored in localStorage (`localStorage.theme`)
-- **Mobile menu:** Managed via DOM class toggling (`.hidden` class)
-- **Search modal:** Toggled via hidden class, scroll lock on body
-- **No backend state:** All state is ephemeral, scoped to browser session
+- Posts in `/content/posts/` → rendered to `/posts/` URL path
+- Tags defined in frontmatter → generates `/tags/[tag-name]/` pages via Hugo taxonomy
+- Categories (if used) → generates `/categories/[category]/` pages
+- List template iterates `.Pages` → displays posts with metadata
 
 ## Key Abstractions
 
-**Template System:**
+**Template Inheritance:**
+- Purpose: DRY template structure
+- Examples: `baseof.html` defines overall page structure; `_default/single.html` and `_default/list.html` define specific block content
+- Pattern: `{{ block "main" . }}{{- end }}` in baseof.html; `{{ define "main" }} ... {{ end }}` in child templates
 
-- Purpose: Reusable HTML components and page layouts
-- Examples: `layouts/_default/baseof.html`, `layouts/partials/header.html`
-- Pattern: Hugo template inheritance with base template and partials
-- The `baseof.html` defines overall HTML structure; content-specific templates define main content block
-- Partials (`head.html`, `header.html`, `footer.html`, `scripts.html`) are included in multiple templates
+**Partials (Reusable Components):**
+- Purpose: Extract common layout sections
+- Examples: `head.html`, `header.html`, `footer.html`, `scripts.html`
+- Pattern: `{{ partial "component-name.html" . }}` includes partial with current context
 
-**Markdown-based Content:**
+**Taxonomies (Content Organization):**
+- Purpose: Classify posts without nested directories
+- Examples: Tags, categories (configured in `hugo.toml`)
+- Pattern: Frontmatter `tags: [tag1, tag2]` → Hugo auto-generates taxonomy pages
 
-- Purpose: Write blog posts and pages in simple, portable format
-- Examples: `content/posts/_index.md`, `content/posts/*.md`, `content/about.md`
-- Pattern: YAML frontmatter metadata + Markdown body
-- Frontmatter keys: `title`, `date`, `draft`, `tags`, `description`
-- Content is versioned in git, changes trigger rebuilds
-
-**Styling with Tailwind CSS:**
-
-- Purpose: Utility-first, composable styling without writing custom CSS
-- Examples: Classes like `text-4xl`, `font-bold`, `dark:bg-gray-900`
-- Pattern: Tailwind directives in `main.css` + HTML class names
-- Dark mode via `dark:` prefix; responsive via `sm:`, `md:`, etc.
-- Custom typography via `@tailwindcss/typography` plugin for prose styling
-
-**Static Search (Pagefind):**
-
-- Purpose: Client-side full-text search without database/server
-- Pattern: Build-time HTML crawling creates JSON index, JS widget on client
-- Search data stored in `public/pagefind/` directory
-- UI initialized in `scripts.html` with result display
+**Configuration Objects:**
+- Purpose: Centralize magic numbers and constants
+- Examples: `tailwind.config.js` theme extensions, `CONFIG` object in `flow-field-background.js`
+- Pattern: JS/config files define constants; templates/scripts reference them
 
 ## Entry Points
 
-**Hugo Build:**
-- Location: `hugo.toml` + `package.json` scripts
-- Triggers: `npm run dev` (watch mode), `npm run build` (production), `npm run build:search`
-- Responsibilities:
-  - Reads config from `hugo.toml`
-  - Discovers content in `content/`
-  - Applies templates from `layouts/`
-  - Outputs HTML to `public/`
+**Build Entry:**
+- Location: `hugo.toml`
+- Triggers: `npm run build` or `hugo` command
+- Responsibilities: Define site baseURL, output formats, taxonomies, menus; point Hugo to content/layouts
 
-**CSS Pipeline:**
-- Location: `postcss.config.js`, `tailwind.config.js`, `assets/css/main.css`
-- Triggers: PostCSS runs during Hugo build
-- Responsibilities:
-  - Tailwind scans HTML templates for used classes
-  - Generates only used CSS
-  - Autoprefixer adds browser prefixes
-  - Minifies in production
+**Development Server:**
+- Location: `package.json` → `npm run dev`
+- Triggers: `hugo server --buildDrafts --buildFuture`
+- Responsibilities: Watch file changes, rebuild incrementally, serve with live reload
 
-**Docker Build:**
-- Location: `Dockerfile`
-- Triggers: GitHub Actions on push to main
-- Responsibilities:
-  - Installs npm dependencies
-  - Runs Hugo build
-  - Generates search index
-  - Copies assets to nginx container
-  - Outputs final image to container registry
+**Homepage:**
+- Location: `/layouts/index.html`
+- Triggers: User visits `/`
+- Responsibilities: Render hero section, list 5 recent posts, link to full post list
 
-**Deployment:**
-- Location: `.github/workflows/deploy.yml`
-- Triggers: Push to main branch or manual workflow dispatch
-- Responsibilities:
-  - Builds Docker image and pushes to GHCR
-  - Connects to remote server via SSH
-  - Pulls latest image and runs docker-compose
-  - Manages container lifecycle
+**Post Single Page:**
+- Location: `/layouts/_default/single.html`
+- Triggers: User visits `/posts/[slug]/`
+- Responsibilities: Render article header (date, title, description, tags), content, post navigation
 
-**Client-side Scripts:**
-- Location: `layouts/partials/scripts.html`
-- Triggers: Automatically on page load
-- Responsibilities:
-  - Dark mode detection and toggle
-  - Mobile menu toggle
-  - Search modal open/close
-  - Keyboard shortcuts (Cmd/Ctrl+K for search, Esc to close)
-  - Pagefind UI initialization
+**Post List Page:**
+- Location: `/layouts/_default/list.html`
+- Triggers: User visits `/posts/`, `/tags/[tag]/`, or `/categories/[cat]/`
+- Responsibilities: List posts with pagination, show title/description/tags
+
+**Search:**
+- Location: Header search button → `scripts.html` opens Pagefind modal
+- Triggers: Click search icon, Cmd/Ctrl+K, focus search input
+- Responsibilities: Search across all page content, display results
+
+**Background Animation:**
+- Location: `/static/js/flow-field-background.js`
+- Triggers: Page load (script tag in `baseof.html`)
+- Responsibilities: Create canvas, animate particles with Perlin noise flow field, respond to mouse input
 
 ## Error Handling
 
-**Strategy:** Silent degradation with graceful fallbacks
+**Strategy:** Graceful degradation for missing content/features
 
 **Patterns:**
-
-- **Missing content:** Pages render "No posts yet" or "No content found" templates
-- **CSS loading failure:** Site remains functional in default (light) styling
-- **JavaScript unavailability:** Core navigation still works; search and dark mode unavailable
-- **Pagefind loading:** Search button functional, but results won't appear until JS loads
-- **404 errors:** Custom 404.html template served by nginx via error_page directive
+- Hugo `with` blocks: `{{ with .Description }}{{ . }}{{ else }}fallback{{ end }}`
+- Missing images/content: List pages show "No posts yet" message
+- JavaScript feature detection: Dark mode falls back to system preference; animations disable on mobile/reduced motion
+- Search: Pagefind UI handles missing search index gracefully
 
 ## Cross-Cutting Concerns
 
-**Logging:** None - Static site has no server-side logging. Client errors not tracked.
+**Logging:** No structured logging. `console.log()` used minimally in animations for debugging.
 
 **Validation:**
-- Frontmatter validation implicit (Hugo fails build if invalid YAML)
-- No runtime validation (all checks occur at build time)
+- Hugo frontmatter validation via archetype defaults
+- No runtime validation (static site)
 
-**Authentication:** None - Public blog, no authentication required
+**Authentication:** Not applicable (static site)
 
 **Dark Mode:**
-- Detected via `prefers-color-scheme` media query on first load
-- User toggle persisted to localStorage
-- System preference changes monitored via `matchMedia` listener
-- Applied via `dark:` prefix on classes and embedded CSS variables
+- System preference detection in `head.html`
+- User preference saved to localStorage
+- Class-based CSS (`dark:` Tailwind prefix)
+- JavaScript toggles `dark` class on `<html>` element
 
-**SEO:**
-- Canonical URL in `<head>` prevents duplicate content
-- Open Graph meta tags in `head.html` for social sharing
-- Structured description in frontmatter
-- RSS feed generation for feed readers
-- Sitemap generated by Hugo automatically
+**Responsive Design:**
+- Tailwind breakpoints (sm, md, lg, xl)
+- Fluid typography using `clamp()` CSS function
+- Mobile menu hidden by default, shown on click
+- Grid/flex layouts adjust per breakpoint
 
-**Performance:**
-- Static output means no database queries, fast responses
-- CSS minimization removes unused classes (Tailwind)
-- Asset fingerprinting in production prevents cache issues
-- Long cache headers (1 year) for versioned assets
-- Short cache (1 hour) for HTML pages (allows updates)
-- Gzip compression in nginx for text/code
-- View Transitions API for smooth navigation without full page reloads
-
-**Security:**
-- nginx security headers: X-Frame-Options, X-Content-Type-Options, X-XSS-Protection
-- Content Security Policy implicit (no inline scripts except initialization)
-- HTTPS enforced by Traefik reverse proxy with Let's Encrypt certs
-- HTML unsafe rendering disabled by default; only enabled for specific markdown processing
-- No user input accepted (read-only site)
+**Performance Optimization:**
+- Static HTML (no runtime rendering cost)
+- CSS minification in production (`| minify | fingerprint` in head.html)
+- Deferred image loading (no lazy loading configured)
+- Canvas animation respects `prefers-reduced-motion` via `isMobile` check
 
 ---
 
-*Architecture analysis: 2026-01-28*
+*Architecture analysis: 2026-01-29*

@@ -1,119 +1,121 @@
 # External Integrations
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
 ## APIs & External Services
 
-**Fonts:**
-- Fonts.bunny.net - CDN for web fonts (Inter, JetBrains Mono)
-  - Source: `layouts/partials/head.html`
-  - URL: `https://fonts.bunny.net/css?family=inter:400,500,600,700|jetbrains-mono:400,500`
+**Font Loading:**
+- Fonts Bunny (privacy-friendly Google Fonts alternative)
+  - Usage: Load Inter and JetBrains Mono fonts
+  - Connection: `https://fonts.bunny.net` via `<link rel="preconnect">`
+  - Fonts: `inter:100..900|jetbrains-mono:400,500`
 
-**Container Registry:**
-- GitHub Container Registry (ghcr.io) - Docker image hosting
-  - Image: `ghcr.io/danielfrevel/dande:latest`
-  - Authentication: GitHub OIDC token via Actions
-  - Reference: `.github/workflows/deploy.yml`
+**Search:**
+- Pagefind - Client-side search functionality
+  - No external API calls (offline-capable)
+  - Generated at build time via `npx pagefind --site public`
+  - Runtime files served from `/pagefind/` directory
 
 ## Data Storage
 
 **Databases:**
-- None - Static site, no database
+- None - Purely static site (no database)
 
 **File Storage:**
-- Local filesystem only - All content stored in git (`content/` directory)
-- Generated static files: `public/` directory (not committed)
+- Local filesystem only - All content in `/content` directory (markdown files)
+- Built artifacts in `/public` directory
+- Static assets in `/static` directory
 
 **Caching:**
-- Nginx static cache configured for:
-  - Assets (CSS, JS, images): 1 year immutable cache
-  - HTML pages: 1 hour with must-revalidate
-  - Pagefind search index: 1 day
+- Nginx caching (production) via `nginx.conf`
+  - Static assets (CSS, JS, fonts, images): 1 year with immutable flag
+  - HTML pages: 1 hour
+  - Pagefind index: 1 day
   - RSS feed: 1 hour
-  - Configuration: `nginx.conf`
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- None - Public blog with no auth requirements
-- Deployment auth: GitHub Actions secrets for SSH key and server credentials
+- None - Public blog, no authentication required
 
 ## Monitoring & Observability
-
-**Health Checks:**
-- Docker container health check: HTTP GET to `http://localhost/` every 30s
-  - Implementation: `Dockerfile` HEALTHCHECK directive
-  - Tool: wget
 
 **Error Tracking:**
 - None configured
 
 **Logs:**
-- Docker logs via compose - captured from nginx access/error logs
-- No external log aggregation
+- Nginx logs (access and error logs in container)
+- GitHub Actions workflow logs available in repository
+
+**Health Checks:**
+- Docker HEALTHCHECK in `Dockerfile`
+  - Interval: 30 seconds
+  - Timeout: 3 seconds
+  - Retries: 3
+  - Command: `wget --no-verbose --tries=1 --spider http://localhost/ || exit 1`
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Custom VPS via SSH deploy (address: `${{ secrets.SERVER_HOST }}`)
-  - SSH port: 2222
-  - SSH key: `${{ secrets.SERVER_SSH_KEY }}`
-  - SSH user: `${{ secrets.SERVER_USER }}`
-  - Deploy path: `/opt/docker/blog`
+- Docker Container on self-managed Linux server
+- Reverse proxy: Traefik
+- Domain: `blog.danfrevel.de`
 
 **CI Pipeline:**
-- GitHub Actions
-- Triggers: Push to main branch, manual workflow_dispatch
-- Build steps:
-  1. Docker Buildx for multi-platform builds
-  2. Log in to ghcr.io with GitHub OIDC token
-  3. Build and push Docker image with GitHub Actions cache
-  4. SSH into server and run docker compose pull/up on successful build
-  - Workflow file: `.github/workflows/deploy.yml`
+- GitHub Actions (`.github/workflows/deploy.yml`)
+  - Triggers: Push to main branch or manual dispatch
+  - Build: Docker Buildx multi-stage build
+  - Registry: GitHub Container Registry (ghcr.io)
+  - Deploy: SSH via appleboy/ssh-action to remote server
+  - Docker Compose orchestration on server
 
-**Reverse Proxy & SSL/TLS:**
-- Traefik (external docker network)
-  - Domain: `blog.danfrevel.de`
-  - Entry point: websecure
-  - TLS resolver: letsencrypt (automatic certificate generation)
-  - HSTS enabled: 31536000 seconds (1 year)
-  - Network: `traefik` (external, shared with reverse proxy container)
-  - Configuration: `docker-compose.yml` labels
+**Container Registry:**
+- GitHub Container Registry (ghcr.io)
+- Image: `ghcr.io/danielfrevel/dande:latest`
+- Authentication: GitHub token via Actions secrets
 
 ## Environment Configuration
 
 **Required env vars:**
-- `SERVER_HOST` - Target VPS hostname for deployment
+- `SERVER_HOST` - Remote server hostname
 - `SERVER_USER` - SSH user for deployment
-- `SERVER_SSH_KEY` - Private SSH key for authentication
-- GitHub OIDC automatically provides `GITHUB_TOKEN` for registry login
+- `SERVER_SSH_KEY` - Private SSH key for deployment authentication
+- `GITHUB_TOKEN` - Automatically provided by GitHub Actions
 
 **Secrets location:**
-- GitHub Actions Secrets (.github/workflows/deploy.yml references)
-
-**Build Configuration:**
-- Hugo settings: `hugo.toml` for site metadata, RSS, syntax highlighting, menus
-- Tailwind JIT scanning: `tailwind.config.js` scans `layouts/` and `content/` for class names
-- Dark mode: CSS class strategy (manually toggled by theme switcher)
+- GitHub repository secrets (referenced in `.github/workflows/deploy.yml`)
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None - Static site generation triggered by push events only
+- GitHub webhook on push to main branch (triggers deploy.yml workflow)
 
 **Outgoing:**
-- RSS feed generated: `index.xml` (standard Hugo RSS output)
-- Static site content delivery via Nginx
+- None
 
-## External Dependencies
+## SSL/TLS
 
-**Hugo Module System:**
-- Not used - pure Hugo configuration
+**Certificate Management:**
+- Let's Encrypt via Traefik
+- Configured in docker-compose.yml labels
+- HSTS enabled: 31536000 seconds (1 year) with subdomains included
+- TLS termination at Traefik layer
 
-**NPM Registry:**
-- npm packages sourced from registry.npmjs.org
-- Lock file enforces exact versions
+## Security Headers
+
+**Implemented via nginx.conf:**
+- X-Frame-Options: SAMEORIGIN
+- X-Content-Type-Options: nosniff
+- X-XSS-Protection: 1; mode=block
+- Referrer-Policy: strict-origin-when-cross-origin
+
+## Content Delivery
+
+**RSS Feed:**
+- Generated by Hugo at `/index.xml`
+- Format: RSS 2.0
+- Caching: 1 hour
 
 ---
 
-*Integration audit: 2026-01-28*
+*Integration audit: 2026-01-29*

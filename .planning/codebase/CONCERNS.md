@@ -1,205 +1,225 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
-## Deployment Security
+## Tech Debt
 
-**SSH Key Exposure Risk:**
-- Issue: SSH private key passed via GitHub Secrets to CI/CD pipeline without rotation mechanism
-- Files: `.github/workflows/deploy.yml` (line 64)
-- Impact: Compromised key requires manual server access to rotate; no automated key management
-- Fix approach: Implement key rotation policy, consider using GitHub Deploy Keys or OIDC authentication instead of static SSH keys for better security posture
+**Inline scripting in HTML partials:**
+- Issue: Multiple `<script>` blocks embedded directly in `layouts/partials/scripts.html` (lines 2-66), creating inline event handlers for theme toggle, mobile menu, and search modal
+- Files: `layouts/partials/scripts.html` (80 lines)
+- Impact: No module system, difficult to test, potential security issues with DOM manipulation, tight coupling between markup and behavior
+- Fix approach: Extract to separate modules in `/static/js/` with clear separation of concerns. Consider using data attributes for element selection instead of IDs.
 
-**Missing Firewall Configuration on SSH Port:**
-- Issue: Server SSH configured on custom port 2222 but no mention of firewall rules
-- Files: `.github/workflows/deploy.yml` (line 62), deployment instructions in `USAGE.md`
-- Impact: SSH brute force attacks possible if firewall not properly configured
-- Recommendations: Document firewall requirements, restrict SSH to GitHub Actions IP range if possible
+**Missing CSS asset configuration:**
+- Issue: Tailwind CSS is processed via Hugo Pipes in `layouts/partials/head.html` (lines 65-70) but no `/assets/css/main.css` exists to be processed—only empty base layer in `assets/css/main.css`
+- Files: `assets/css/main.css` (5 lines)
+- Impact: CSS postprocessing relies on defaults, no custom utilities or theme extensions beyond Tailwind config
+- Fix approach: Populate `assets/css/main.css` with meaningful base layers, components, and utilities matching design system
 
-## Deployment Process Gaps
+**Hardcoded DOM IDs for JavaScript coupling:**
+- Issue: JavaScript targets specific DOM IDs (`search-button`, `search-modal`, `search-backdrop`, `theme-toggle`, `mobile-menu-button`, `mobile-menu`, `flow-field-canvas`) scattered across files with no single source of truth
+- Files: `layouts/partials/scripts.html`, `layouts/partials/header.html`, `static/js/flow-field-background.js`
+- Impact: Renaming HTML requires updating multiple JS files; fragile to refactoring
+- Fix approach: Create a configuration file (e.g., `static/js/config.js`) with centralized ID mappings
 
-**No Pre-deployment Health Checks:**
-- Issue: Docker compose up runs without validation that old container properly shut down
-- Files: `.github/workflows/deploy.yml` (lines 67-68)
-- Impact: Race conditions possible between old container stopping and new one starting
-- Fix approach: Add explicit healthcheck wait before declaring deployment successful; use docker-compose to wait for health status
+**Performance: Redundant dark mode detection:**
+- Issue: Dark mode detection logic duplicated across three places: `layouts/partials/head.html` (lines 49-58, synchronous check), `layouts/partials/scripts.html` (lines 2-16, event listener), and `static/js/flow-field-background.js` (lines 142-145, runtime check)
+- Files: `layouts/partials/head.html`, `layouts/partials/scripts.html`, `static/js/flow-field-background.js`
+- Impact: Redundant DOM queries and conditional logic; inconsistent theme detection across components
+- Fix approach: Centralize theme management in a single module that other scripts subscribe to
 
-**Orphaned Container Cleanup Without Verification:**
-- Issue: `docker image prune -f` force-removes images without checking if they're still referenced
-- Files: `.github/workflows/deploy.yml` (line 69)
-- Impact: If new container fails to start, dangling images are already deleted, making rollback harder
-- Fix approach: Move image prune to post-deployment verification step, or use more conservative cleanup (--all-unused)
+**Unused CSS classes in stats:**
+- Issue: `hugo_stats.json` contains many CSS classes not actively used (`dark:bg-gray-100`, `dark:hover:bg-gray-200`, `hover:bg-gray-800`, `inline-block`, etc.)
+- Files: `hugo_stats.json` (auto-generated), layout files
+- Impact: Generated CSS may include unused utilities; harder to understand active design system
+- Fix approach: Run PurgeCSS/Tailwind minification in production build; audit Tailwind config against actual usage
 
-**Missing Deployment Rollback Strategy:**
-- Issue: No rollback mechanism if deployment fails or new version introduces bugs
-- Files: `.github/workflows/deploy.yml`
-- Impact: Bad deployments require manual SSH intervention to recover
-- Fix approach: Tag Docker images with commit SHA, keep previous image available for quick rollback
+## Known Bugs
 
-## Build & Docker Concerns
+**Particle clustering on dark mode switch:**
+- Symptoms: Particles visibly converge/cluster when toggling dark mode
+- Files: `static/js/flow-field-background.js` (lines 142-145, 225-236)
+- Trigger: Click theme toggle button while animation is running
+- Workaround: Brief visual glitch but recovers; particles respawn after `particleMaxAge` (500ms)
+- Root cause: `isDarkMode()` function rechecks `.dark` class but particle velocities and angles aren't reset during mode switch
 
-**Large Package Installation Without Cache Control:**
-- Issue: `npm install --prefer-offline --no-audit` in Docker build uses loose caching strategy
-- Files: `Dockerfile` (line 8)
-- Impact: Build times inconsistent; vulnerable packages may be cached despite --prefer-offline
-- Fix approach: Use `npm ci` instead of `npm install` with locked dependencies, add explicit Docker layer caching
+**Search modal focus not guaranteed:**
+- Symptoms: setTimeout hack (line 38-41 in `layouts/partials/scripts.html`) to focus search input after Pagefind loads
+- Files: `layouts/partials/scripts.html` (lines 37-41)
+- Trigger: Open search modal via search button or Cmd/Ctrl+K
+- Workaround: Manual click in input field
+- Root cause: Pagefind UI injected asynchronously; no load event to hook into
 
-**Missing Docker Image Base Hardening:**
-- Issue: Using `nginx:alpine` as-is without non-root user or additional hardening
-- Files: `Dockerfile` (line 20)
-- Impact: Container runs as root by default; any RCE vulnerability gives full container access
-- Fix approach: Add USER directive, remove unnecessary packages from nginx image, consider distroless alternative
+**Body overflow: hidden persists after modal close:**
+- Symptoms: If search modal closes abnormally (e.g., page navigation), `document.body.style.overflow` may remain `'hidden'`, locking scroll
+- Files: `layouts/partials/scripts.html` (lines 44-46)
+- Trigger: Open search → navigate to another page before closeSearch() executes
+- Workaround: Manually set `document.body.style.overflow = ''` in browser console
+- Root cause: No cleanup on page unload; modal state not persisted to localStorage
 
-**Lack of Build Reproducibility:**
-- Issue: Hugo version not pinned; uses whatever is in `hugomods/hugo:exts`
-- Files: `Dockerfile` (line 2)
-- Impact: Different developers/CI runs may build with different Hugo versions, causing inconsistent output
-- Fix approach: Pin Hugo version explicitly, either in base image tag or via package manager
+## Security Considerations
 
-## Configuration & Secrets
+**XSS via unsafe Hugo markup renderer:**
+- Risk: `hugo.toml` line 25 sets `unsafe = true` for Goldmark renderer, allowing raw HTML in Markdown
+- Files: `hugo.toml` (line 25)
+- Current mitigation: Trust in content authors
+- Recommendations:
+  - If publishing user-generated content, set `unsafe = false`
+  - Document HTML content restrictions in contributor guidelines
+  - Add HTML sanitizer middleware if adding comment system
 
-**Placeholder Configuration Not Cleared:**
-- Issue: `hugo.toml` contains placeholder values (baseURL, author name, description)
-- Files: `hugo.toml` (lines 1, 15, 14)
-- Impact: Example content visible in production if config wasn't updated; confusing for new team members
-- Fix approach: Use environment variable substitution or separate config for production, document required changes
+**localStorage theme without validation:**
+- Risk: `localStorage.theme` read in `layouts/partials/head.html` and `layouts/partials/scripts.html` without validation
+- Files: `layouts/partials/head.html` (line 52), `layouts/partials/scripts.html` (line 7)
+- Current mitigation: Only 'dark' and 'light' values are meaningful; invalid values ignored
+- Recommendations: Explicitly whitelist theme values: `if (['dark', 'light'].includes(localStorage.theme))`
 
-**Hard-coded Domain in Traefik Config:**
-- Issue: Domain `blog.danfrevel.de` hard-coded in docker-compose.yml labels
-- Files: `docker-compose.yml` (line 9)
-- Impact: Can't easily deploy to different domains without editing compose file
-- Fix approach: Extract domain to environment variable, documented in deployment instructions
+**Mouse position tracking without rate limiting:**
+- Risk: `document.addEventListener('mousemove', ...)` in `static/js/flow-field-background.js` (line 169) fires on every pixel movement with no debounce
+- Files: `static/js/flow-field-background.js` (lines 168-178)
+- Current mitigation: Particle update runs at ~60fps, so excess events are harmless
+- Recommendations: Consider event delegation or passive listeners if cursor interaction becomes more complex
 
-**No Environment-specific Configurations:**
-- Issue: Single `hugo.toml` used for all environments (dev/staging/prod)
-- Files: `hugo.toml`
-- Impact: Easy to accidentally build/test with production baseURL or analytics
-- Fix approach: Split config by environment (hugo.dev.toml, hugo.prod.toml) or use config directory approach
+## Performance Bottlenecks
 
-## Performance & Caching
+**Canvas animation on every frame:**
+- Problem: `animate()` in `static/js/flow-field-background.js` (lines 147-166) redraws entire canvas + 80 particles every frame (~60fps)
+- Files: `static/js/flow-field-background.js`
+- Cause: Full canvas repaint (line 160) instead of incremental updates
+- Current: Acceptable on modern devices; mobile throttled to 40 particles
+- Improvement path:
+  - Implement particle pooling to reduce GC pressure
+  - Use transform tricks instead of redrawing if possible (limited for flow fields)
+  - Add frame-skip option for low-end devices
 
-**Font Loading Not Optimized:**
-- Issue: Google Fonts (fonts.bunny.net) loaded synchronously in head without preload hints
-- Files: `layouts/partials/head.html` (line 59)
-- Impact: Blocks rendering until fonts load; no fallback specified
-- Fix approach: Add font-display: swap, preload critical fonts, consider system fonts fallback
+**resize event debounce at 100ms:**
+- Problem: Window resize triggers `resizeCanvas()` (line 207-209) after 100ms delay, but delay is fixed
+- Files: `static/js/flow-field-background.js` (lines 204-210)
+- Cause: Arbitrary timeout duration
+- Improvement path: Use requestAnimationFrame instead of setTimeout for resize batching
 
-**No Service Worker or Static Asset Versioning:**
-- Issue: CSS/JS fingerprinting used but no service worker for offline capability
-- Files: `layouts/partials/head.html` (lines 62-67)
-- Impact: Users must have network connectivity; no progressive enhancement for offline reading
-- Fix approach: Add basic service worker for offline-first caching strategy
+**Pagefind integration blocks search:**
+- Problem: Pagefind loads asynchronously in `layouts/partials/scripts.html` (lines 70-80), creating race condition on first search
+- Files: `layouts/partials/scripts.html` (lines 70-80)
+- Cause: `new PagefindUI()` may not be ready when user opens search modal
+- Improvement path: Wait for Pagefind to initialize before allowing search modal to open; show loading state
 
-**Search Index Not Cached Efficiently:**
-- Issue: Pagefind search index served with 1-day cache while static assets get 1-year
-- Files: `nginx.conf` (line 58)
-- Impact: Search results lag by up to 24 hours on updates; inconsistent with other caching strategy
-- Fix approach: Either short cache on all assets or implement cache busting via versioned paths
-
-## Frontend Concerns
-
-**Dark Mode Flash Risk:**
-- Issue: Dark mode script in head may still cause FOUC (Flash of Unstyled Content) due to timing
-- Files: `layouts/partials/head.html` (lines 48-55)
-- Impact: Brief flash of wrong theme visible before JS runs
-- Fix approach: Move script inline before any HTML rendering, use `document.write` as fallback
-
-**Mobile Menu Not Keyboard Accessible:**
-- Issue: Mobile menu toggle uses only click handler, no keyboard support (Tab/Enter)
-- Files: `layouts/partials/scripts.html` (lines 18-26)
-- Impact: Keyboard users cannot access mobile menu
-- Fix approach: Add keydown handlers for Enter/Space, set proper ARIA attributes
-
-**Search Modal Accessibility Issues:**
-- Issue: Search modal uses `hidden` class, no aria-hidden or focus trap implementation
-- Files: `layouts/partials/scripts.html` (lines 28-67)
-- Impact: Screen readers may read hidden content; focus can escape modal
-- Fix approach: Add aria-hidden, implement focus trap, ensure escape key works consistently
-
-**Inline JavaScript Without CSP**:
-- Issue: Multiple inline scripts in head/footer without Content Security Policy
-- Files: `layouts/partials/head.html`, `layouts/partials/scripts.html`
-- Impact: Vulnerable to XSS attacks; no policy preventing inline script execution
-- Fix approach: Add CSP headers in nginx.conf, move inline scripts to external files or use nonce attributes
-
-## Content & Maintenance
-
-**Only 1 Content File in Repository:**
-- Issue: Only 2 content files present (about.md and _index.md stub)
-- Files: `content/about.md`, `content/posts/_index.md`
-- Impact: Unable to validate blog functionality end-to-end; unclear if posting workflow actually works
-- Fix approach: Add sample posts to test content pipeline
-
-**No Automated Link Checking:**
-- Issue: No tool to validate internal/external links during build
-- Impact: Dead links possible in published content; discovered only by manual testing
-- Fix approach: Add htmlproofer or similar step to build pipeline
-
-## Testing & Validation
-
-**No Automated Tests:**
-- Issue: No test suite for layouts, CSS, or build process
-- Impact: Breaking changes to templates discovered post-deployment
-- Fix approach: Add Hugo template testing, CSS regression tests, or integration tests
-
-**No Build Validation:**
-- Issue: Docker build succeeds but no checks that generated site is valid HTML/CSS
-- Files: `Dockerfile` (line 14)
-- Impact: Invalid HTML/CSS deployed silently
-- Fix approach: Add HTML validation step (e.g., html-validate) to build, check for broken links
-
-## Dependency Management
-
-**Caret Versioning on Critical Dependencies:**
-- Issue: All dependencies use `^` (caret) versioning allowing minor/patch updates
-- Files: `package.json` (lines 11-16)
-- Impact: Automatic updates could introduce breaking changes (e.g., Tailwind CSS major UI changes)
-- Fix approach: Use exact versions or tilde for critical frontend deps, manage updates explicitly
-
-**Node Version Not Pinned:**
-- Issue: No .nvmrc or node version specification anywhere
-- Impact: CI vs local developer environments may use different Node versions
-- Fix approach: Add .nvmrc file, specify node version in flake.nix, document in USAGE.md
-
-**Hugo Version Not Pinned:**
-- Issue: Using `hugomods/hugo:exts` without version tag
-- Files: `Dockerfile` (line 2)
-- Impact: New Hugo versions could break build; developers using different local versions
-- Fix approach: Pin to specific Hugo version tag (e.g., `hugomods/hugo:exts-0.123.4`)
-
-## Documentation Gaps
-
-**Deployment Path Mismatch in Instructions:**
-- Issue: USAGE.md says copy docker-compose.yml to `/opt/blog` but deploy script writes to `/opt/docker/blog`
-- Files: `USAGE.md` (line 67), `.github/workflows/deploy.yml` (line 66)
-- Impact: Deployment fails if following documentation; undocumented directory structure
-- Fix approach: Align paths or document both locations
-
-**Missing Server Prerequisites:**
-- Issue: USAGE.md doesn't specify required Docker version, traefik setup, or system resources
-- Files: `USAGE.md` (deployment section)
-- Impact: First-time deployments fail due to missing traefik network or Docker version incompatibility
-- Fix approach: Add server setup checklist (Docker version, traefik network creation, disk space requirements)
-
-**No Monitoring/Alerting Documentation:**
-- Issue: No guidance on what to monitor or how to set up alerts for deployment failures
-- Impact: Silent failures possible; slow detection of issues
-- Fix approach: Document health check endpoints, log aggregation setup, deployment failure notifications
+**Three-library initialization sequence:**
+- Problem: `flow-field-background.js` depends on `perlin.js` loading first, but no explicit dependency management
+- Files: `layouts/_default/baseof.html` (lines 18-19)
+- Cause: Script order matters; loading perlin.js after flow-field will cause `window.noise` to be undefined
+- Improvement path: Use ES modules or defer/async attributes; add integrity checks in init function (lines 213-216)
 
 ## Fragile Areas
 
-**Search Functionality Dependency:**
-- Files: `layouts/partials/scripts.html`, `package.json`
-- Why fragile: Pagefind search completely fails if JS disabled or pagefind-ui.js fails to load (no fallback)
-- Safe modification: Add loading state, fallback to Google search, graceful degradation
-- Test coverage: No tests for search functionality
+**Flow field animation state management:**
+- Files: `static/js/flow-field-background.js` (global state: lines 20-26)
+- Why fragile: Multiple global flags (`isAnimating`, `animationFrameId`, `isMobile`, `time`, `mouseX`, `mouseY`, `lastTime`) with no synchronization mechanism
+- Safe modification: Always use `stopAnimation()` and `startAnimation()` to control state; never set `isAnimating` directly
+- Test coverage: No tests; manual testing required for visibility changes, theme switches, and mobile detection
 
-**CSS Pipeline Fragility:**
-- Files: `layouts/partials/head.html`, `tailwind.config.js`, `postcss.config.js`
-- Why fragile: Hugo pipes CSS post-processing; if resources directory doesn't exist or Hugo version changes, CSS won't generate
-- Safe modification: Always test CSS generation locally before deploying, watch resource files in dev
-- Test coverage: No CSS validation tests
+**Particle physics model:**
+- Files: `static/js/flow-field-background.js` (lines 83-131)
+- Why fragile: Tuning `CONFIG` values (noiseScale, noiseStrength, maxSpeed, trailFade) requires visual testing; no unit tests
+- Safe modification: Changes to CONFIG affect visual output immediately; test in both light/dark modes and on mobile
+- Test coverage: None; visual regression testing needed
+
+**Hugo template cascade:**
+- Files: `layouts/_default/baseof.html`, `layouts/_default/single.html`, `layouts/_default/list.html`, `layouts/index.html`
+- Why fragile: Inheritance chain not explicit; changing `baseof.html` affects all pages
+- Safe modification: Test all page types (home, post list, single post, 404) after layout changes
+- Test coverage: None; rely on manual site build and link verification
+
+**Tailwind configuration with custom fonts:**
+- Files: `tailwind.config.js` (lines 10-19)
+- Why fragile: Depends on fonts.bunny.net CDN loading in `layouts/partials/head.html` (line 62)
+- Safe modification: Test font loading on slow networks (3G throttle in DevTools)
+- Test coverage: None; layout shift issues possible if fonts load slowly
+
+## Scaling Limits
+
+**Particle animation on large viewports:**
+- Current capacity: 80 desktop particles, 40 mobile particles; responsive based on pointer capability
+- Limit: ~150 particles causes noticeable frame drop on 4K displays
+- Scaling path: Implement WebGL renderer or batch draw calls instead of individual `ctx.arc()` for each particle
+
+**Canvas memory at high DPR (device pixel ratio):**
+- Current capacity: Canvas size = `innerWidth * DPR × innerHeight * DPR`; at 4K + 2x DPR = 16MP canvas
+- Limit: Beyond 3x DPR or 8K viewport becomes memory-constrained
+- Scaling path: Downscale canvas for high DPR displays (trade resolution for memory)
+
+**Hugo build time with pagefind:**
+- Current capacity: Pagefind index generation on each `npm run build:search`
+- Limit: Not a concern for small blogs (<1000 posts); would need incremental indexing for large archives
+- Scaling path: Use Pagefind's incremental build feature once available; consider external search SaaS for 10k+ posts
+
+## Dependencies at Risk
+
+**pagefind@^1.0.4:**
+- Risk: Semver `^1.0.4` allows up to `<2.0.0`; Pagefind is relatively new (v1.4.0 in package-lock)
+- Impact: Breaking changes in v2 could break search UI; maintainer has been active
+- Migration plan: Pin to `^1.4.0` for stability; monitor releases for v2; test search heavily before upgrading
+
+**perlin.js (vendored noisejs):**
+- Risk: Vendored 2012-era library (static/js/perlin.js); no build system or updates
+- Impact: No security updates possible; library is small and math-only, so low risk
+- Migration plan: If Perlin noise becomes bottleneck, consider WebAssembly port or dedicated library
+
+**Tailwind CSS @tailwindcss/typography@0.5.10:**
+- Risk: Plugin adds 50KB of prose styles; major version 1.0+ exists but may have breaking changes
+- Impact: Markdown rendering depends on plugin; major bump could change article styling
+- Migration plan: Pin to `0.5.10`; test upgrade in staging; check prose theme customization before bumping
+
+## Missing Critical Features
+
+**No analytics or monitoring:**
+- Problem: No way to detect if animation is draining battery, causing scroll jank, or degrading performance
+- Blocks: Can't measure real-world impact of flow field animation
+
+**No automated testing:**
+- Problem: No unit tests, integration tests, or E2E tests
+- Blocks: Can't safely refactor JavaScript; visual regressions undetected; particle physics changes risky
+
+**No build step for JavaScript:**
+- Problem: JavaScript delivered unbundled; no tree-shaking, minification, or module resolution
+- Blocks: Can't use npm packages for animation; all code must be vanilla or vendored
+
+**No dark mode testing:**
+- Problem: Dark mode toggling tested manually only
+- Blocks: Particle clustering bug (lines 225-236) may have similar siblings
+
+## Test Coverage Gaps
+
+**Flow field animation state transitions:**
+- What's not tested: Visibility change → animation pause/resume, theme toggle → color adjustment, resize → particle respawn
+- Files: `static/js/flow-field-background.js` (lines 196-236, 249-252)
+- Risk: Logic errors in `handleVisibilityChange()` and `init()` cascade to entire animation
+- Priority: High
+
+**Search modal state machine:**
+- What's not tested: Opening/closing via button, backdrop click, Escape key, Cmd/Ctrl+K, focus trap
+- Files: `layouts/partials/scripts.html` (lines 28-66)
+- Risk: `document.body.style.overflow` persistence, focus management, multiple opens without close
+- Priority: High
+
+**Responsive design at breakpoints:**
+- What's not tested: Mobile menu toggle, particle count switch at `pointer: coarse` breakpoint, layout reflow
+- Files: `layouts/partials/header.html`, `static/js/flow-field-background.js` (line 238)
+- Risk: Mobile-only bugs go unnoticed
+- Priority: Medium
+
+**Dark mode flash on page load:**
+- What's not tested: Initial page load with theme preference stored; verify no white flash in dark mode
+- Files: `layouts/partials/head.html` (lines 49-58)
+- Risk: FCP (First Contentful Paint) shows wrong theme for milliseconds
+- Priority: Medium
+
+**Pagefind integration failure:**
+- What's not tested: Pagefind CDN down, slow network, missing `public/pagefind/` directory
+- Files: `layouts/partials/scripts.html` (lines 69-80)
+- Risk: Search modal opens but no results; no error messaging
+- Priority: Low (static site, unlikely to fail)
 
 ---
 
-*Concerns audit: 2026-01-28*
+*Concerns audit: 2026-01-29*

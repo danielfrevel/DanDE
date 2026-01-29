@@ -1,145 +1,168 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
 ## Naming Patterns
 
 **Files:**
-- Hugo templates: PascalCase or snake_case for partials (e.g., `baseof.html`, `header.html`, `scripts.html`)
-- Content files: kebab-case with `.md` extension (e.g., `my-post-title.md`)
-- Config files: camelCase or standard conventions (e.g., `tailwind.config.js`, `postcss.config.js`, `hugo.toml`)
-- Asset files: lowercase with hyphens (e.g., `main.css`)
+- JavaScript files: lowercase with hyphens (e.g., `flow-field-background.js`, `perlin.js`)
+- HTML partials: lowercase with descriptive names (e.g., `header.html`, `scripts.html`, `head.html`)
+- Config files: lowercase with dots (e.g., `tailwind.config.js`, `postcss.config.js`, `hugo.toml`)
 
-**Template Variables:**
-- Hugo template variables use dot notation and camelCase (e.g., `.Site.Title`, `.Params.tags`, `.IsMenuCurrent`)
-- Local Hugo variables use camelCase (e.g., `$posts`, `$css`)
-- HTML element IDs: kebab-case (e.g., `search-button`, `theme-toggle`, `mobile-menu-button`)
+**Functions:**
+- camelCase for function declarations (e.g., `setupCanvas()`, `createParticles()`, `updateParticle()`, `getFlowAngle()`)
+- Prefix functions with action verbs: `create*`, `setup*`, `handle*`, `draw*`, `update*`, `track*`, `start*`, `stop*`, `init*`
+- Private helper functions use same camelCase pattern without underscore prefix
+- Event handlers: `handle*` prefix (e.g., `handleResize()`, `handleVisibilityChange()`)
+- Init functions explicitly named `init()` for module initialization
 
-**JavaScript Variables:**
-- camelCase for function names and variables (e.g., `openSearch`, `closeSearch`, `mobileMenuButton`)
-- Const declarations for static references (e.g., `const themeToggle = document.getElementById('theme-toggle')`)
+**Variables:**
+- camelCase for local variables (e.g., `canvas`, `ctx`, `particles`, `mouseX`, `mouseY`, `isAnimating`)
+- Constants in UPPER_CASE with const declaration (e.g., `CONFIG`)
+- Boolean flags use `is*` prefix (e.g., `isAnimating`, `isMobile`)
+- Timeout/interval IDs use suffix pattern (e.g., `resizeTimeout`, `animationFrameId`)
+- Single-letter loop variables acceptable (e.g., `i`, `x`, `y`, `t`)
 
-**CSS Classes:**
-- Utility-first approach via Tailwind (e.g., `flex items-center gap-6 text-sm font-medium`)
-- Custom components defined via `@layer components` in `/home/dan/code/blog/assets/css/main.css`
-- Semantic naming for custom classes (e.g., `.highlight pre`)
-- Dark mode using `dark:` prefix for dark-specific classes
-
-**Data Attributes:**
-- kebab-case for datetime attributes (e.g., `datetime="2026-01-22"`)
+**Types:**
+- Constructor functions capitalized (e.g., `Grad(x, y, z)`)
+- Constructor prototype methods defined with lowercase camelCase (e.g., `dot2()`, `dot3()`)
 
 ## Code Style
 
 **Formatting:**
-- HTML: 2-space indentation
-- JavaScript: 2-space indentation, modern ES6+ syntax
-- CSS: Tailwind utility classes preferred, custom CSS in `@layer` directives
-- YAML (hugo.toml): Standard TOML formatting
+- No detected linting configuration (.eslintrc, .prettierrc, biome.json, etc.)
+- Indentation: 2 spaces observed in configuration files, 4-space blocks in JavaScript
+- Line length: No enforced limit detected
+- Semicolons: Present throughout, appears to be a style preference
+- Quotes: Single quotes in HTML templates, double quotes in JavaScript where needed
 
 **Linting:**
-- No ESLint or Prettier configuration detected
-- Follow existing patterns: smooth formatting, readable spacing
-
-**Comments:**
-- Minimal comments - prefer self-documenting code
-- HTML comments for structural sections (e.g., `<!-- Dark Mode Toggle -->`, `<!-- Mobile Menu -->`)
-- JavaScript inline comments for complex logic (e.g., `// Close on Escape key`)
-- CSS layer organization comments (e.g., `@layer base`, `@layer components`)
+- No linting configuration detected
+- Follow style patterns observed in existing code
 
 ## Import Organization
 
-**Hugo Templates:**
-- Partials imported via `{{- partial "name.html" . -}}` syntax
-- Block definitions via `{{ define "main" }}`
-- Template inheritance via `baseof.html` base layout
+**Module Loading Order:**
+1. External dependencies first (e.g., Perlin noise library via `<script>`)
+2. Application scripts follow (e.g., `flow-field-background.js` after `perlin.js`)
+3. CSS/styles via Hugo Pipes in `head.html`
 
-**JavaScript:**
-- Inline scripts in HTML partials
-- External library loading via CDN links (e.g., Pagefind, Google Fonts)
-- No module bundling or import statements used
+**Script Loading in `baseof.html`:**
+```html
+<!-- External libraries -->
+<script src="/js/perlin.js"></script>
+<!-- Application code -->
+<script src="/js/flow-field-background.js"></script>
+```
 
-**CSS/PostCSS:**
-- Tailwind directives: `@tailwind base`, `@tailwind components`, `@tailwind utilities`
-- Layer organization: `@layer base`, `@layer components`
-- PostCSS processing via Hugo Pipes: `resources.Get` and `css.PostCSS`
-
-## DOM Manipulation
-
-**Event Handling:**
-- Direct `addEventListener` for interactivity
-- ID-based element selection via `document.getElementById()`
-- Toggle class patterns: `classList.toggle('hidden')`, `classList.add()`, `classList.remove()`
-
-**Dynamic Behavior:**
-- Dark mode: localStorage theme persistence with `localStorage.theme`
-- Search modal: visibility toggle with `classList` manipulation
-- Mobile menu: responsive hide/show via `classList.toggle('hidden')`
-
-## Template Structure
-
-**Base Layout:**
-- `layouts/_default/baseof.html`: Main structural wrapper
-- `layouts/partials/head.html`: Head meta tags, fonts, styles
-- `layouts/partials/header.html`: Navigation, search, dark mode toggle
-- `layouts/partials/scripts.html`: All inline JavaScript
-- `layouts/partials/footer.html`: Footer content
-- `layouts/_default/single.html`: Single post template
-- `layouts/_default/list.html`: List/pagination template
-- `layouts/index.html`: Homepage template
-
-**Content Front Matter:**
-- YAML front matter with: `title`, `date`, `draft`, `tags`, `description`
-- Tags organized as arrays: `tags: ["tag1", "tag2"]`
-- Dates in ISO format: `date: 2026-01-22`
-
-## Function Design
-
-**JavaScript Functions:**
-- Single responsibility: separate functions for open/close operations (e.g., `openSearch()`, `closeSearch()`)
-- Event delegation: one listener per control
-- Async handling: setTimeout for DOM-dependent operations (100ms delay for input focus)
-
-**Hugo Functions:**
-- Template conditionals: `{{ if }}`, `{{ with }}`, `{{ range }}`
-- Template logic: pagination via `{{ template "_internal/pagination.html" . }}`
-- Data filtering: `{{ where .Site.RegularPages "Section" "posts" }}`
-
-## Styling Patterns
-
-**Tailwind Utility Classes:**
-- Responsive prefixes: `sm:`, `md:`, `lg:` for breakpoint-specific styling
-- Dark mode: `dark:` prefix for dark theme variants
-- State modifiers: `hover:`, `focus:`, `group-hover:` for interactions
-- Spacing: `gap-`, `p-`, `m-`, `px-`, `py-` for margins/padding
-- Colors: semantic color scale usage (e.g., `gray-100`, `gray-900`, `blue-600`)
-
-**Custom CSS:**
-- Minimal custom CSS, layered via PostCSS
-- Scrollbar styling in `@layer base`
-- Code block highlighting in `@layer components`
-- Search highlight styling: `mark` element styling
+**Hugo Template Imports:**
+- Partials loaded via `{{ partial "filename.html" . }}`
+- Common pattern: `head.html`, `header.html`, `scripts.html`, `footer.html`
 
 ## Error Handling
 
-**Strategy:** Defensive DOM operations with existence checks
+**Patterns:**
+- Console error logging for missing dependencies: `console.error('noise.js not loaded')`
+- Guard clauses to check dependencies before use: `if (typeof window.noise === 'undefined')`
+- Early return pattern on initialization failure
+- No try/catch blocks detected - relies on feature detection and guard clauses
+
+**Error Recovery:**
+- Graceful degradation for accessibility: Falls back to static background when reduced motion is preferred
+- Visibility detection prevents animation when tab is hidden
+
+## Logging
+
+**Framework:** console (built-in)
 
 **Patterns:**
-- Optional chaining for potentially missing elements: `const input = searchModal.querySelector('input'); if (input) input.focus();`
-- Safe state transitions: check `classList.contains()` before toggling
-- Fallback to system preferences: dark mode respects `prefers-color-scheme` media query
+- `console.error()` for critical missing dependencies
+- No debug logging detected in production code
+- Comments used instead of logging for operational notes (e.g., `// Watch for system preference changes`)
 
-## Accessibility
+## Comments
 
-**ARIA Labels:**
-- All interactive buttons include `aria-label` (e.g., `aria-label="Search"`, `aria-label="Toggle dark mode"`)
-- Semantic HTML: proper button elements, datetime attributes
-- Focus management: search input receives focus after modal opens
+**When to Comment:**
+- Comments explain "why" not "what" (e.g., `// Theme: light by default, dark if user chose it or system prefers dark`)
+- Inline comments for non-obvious calculations (e.g., `// This isn't a very good seeding function, but it works ok`)
+- Section comments before logical groups (e.g., `// Dark Mode Toggle`, `// Mobile Menu Toggle`, `// Search Modal`)
+- Header comments for third-party code attribution (e.g., noisejs copyright and source)
 
-**Keyboard Interactions:**
-- Escape key closes search modal
-- Cmd/Ctrl+K opens search (keyboard shortcut)
-- Tab navigation preserved in all interactive elements
+**JSDoc/TSDoc:**
+- Not detected in codebase
+- Minimal documentation approach
+
+## Function Design
+
+**Size:**
+- Small, focused functions (10-30 lines typical)
+- Examples: `createParticle()` (8 lines), `setupCanvas()` (15 lines), `updateParticle()` (35 lines)
+- Larger functions only when logically coherent (e.g., `simplex3()` is complex mathematical operation)
+
+**Parameters:**
+- Minimal parameters (0-3 typical)
+- Configuration objects passed to functions where many options needed
+- Example: `CONFIG` object holds 17 parameters instead of function arguments
+
+**Return Values:**
+- Functions return objects with properties (e.g., `createParticle()` returns `{x, y, vx, vy, age}`)
+- Void functions for side effects and mutations (e.g., `updateParticle()` mutates particle in place)
+- Module functions return module namespace objects (e.g., `global.noise = {}`)
+
+## Module Design
+
+**Exports:**
+- Global namespace pollution pattern: `var module = global.noise = {}`
+- Functions attached to module namespace: `module.seed = function(seed) {...}`
+- All public functions exposed on module object
+
+**Barrel Files:**
+- Not applicable - no barrel files detected
+
+**Self-Contained Modules:**
+- IIFE pattern for private scope (perlin.js)
+- Global initialization function pattern (flow-field-background.js)
+- HTML template partials for composition
+
+## Configuration
+
+**Constants Object Pattern:**
+Used extensively for tunable parameters:
+```javascript
+const CONFIG = {
+  particleCount: 80,
+  mobileParticleCount: 40,
+  particleSize: 2,
+  mobileParticleSize: 3,
+  particleColor: '#6366f1',
+  particleAlpha: 0.5,
+  noiseScale: 0.005,
+  noiseStrength: 0.3,
+  timeIncrement: 0.001,
+  mouseRadius: 120,
+  mouseStrength: 3,
+  maxSpeed: 2,
+  trailFade: 0.15,
+  particleMaxAge: 500,
+  bgLight: 'rgba(255, 255, 255, 0.15)',
+  bgDark: 'rgba(15, 23, 42, 0.15)'
+};
+```
+
+All magic numbers centralized in `CONFIG` object - no hardcoded values in functions.
+
+## Tailwind CSS
+
+**Configuration File:** `tailwind.config.js`
+- Uses extend pattern to add custom values
+- Custom fluid font sizing with clamp()
+- Dark mode enabled with class strategy
+- Typography plugin customized with code styling
+
+**Naming in Templates:**
+- Tailwind utility classes only, no custom CSS classes
+- BEM-like structure implied through component nesting (e.g., `header > nav > div`)
 
 ---
 
-*Convention analysis: 2026-01-28*
+*Convention analysis: 2026-01-29*

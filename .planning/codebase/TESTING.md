@@ -1,147 +1,168 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-01-28
+**Analysis Date:** 2026-01-29
 
 ## Test Framework
 
-**Runner:**
-- Not detected - No test framework configured
+**Status:** Not detected
 
-**Assertion Library:**
-- Not applicable
+- No test runner installed (Jest, Vitest, Mocha not in `package.json`)
+- No test configuration files detected (no `jest.config.js`, `vitest.config.ts`, etc.)
+- No test files in source directories (only test files in `node_modules` from dependencies)
+- No test scripts in `package.json` (only `dev`, `build`, `build:search`)
 
-**Run Commands:**
-```bash
-# No test commands configured in package.json
-# Current scripts:
-npm run dev              # Run dev server
-npm run build            # Build production site
-npm run build:search     # Generate search index
-```
-
-## Test File Organization
-
-**Location:**
-- No test files found in project
-
-**Naming:**
-- Not applicable
-
-**Structure:**
-- Not applicable
-
-## Testing Strategy
-
-**Current State:**
-- No automated testing infrastructure
-- Manual testing via local development server and browser
-- Build process validates Hugo template syntax
-
-## Build-Time Validation
-
-**Hugo Compilation:**
-- `npm run build` command executes `hugo --minify`
-- Hugo validates all templates and front matter during build
-- Errors in templates block build completion
-- Syntax highlighting via Chroma validates code fence formatting
-
-**CSS/PostCSS Pipeline:**
-- Tailwind CSS processes all `content: ["./layouts/**/*.html", "./content/**/*.md"]`
-- PostCSS processes via Hugo Pipes
-- Production: minification and fingerprinting applied
-
-## Manual Testing Approach
-
-**Development Workflow:**
-- `npm run dev` runs `hugo server --buildDrafts --buildFuture`
-- Live reload on file changes at `http://localhost:1313`
-- Manual browser testing of:
-  - Dark mode toggle and persistence
-  - Mobile menu responsiveness
-  - Search modal opening/closing
-  - Keyboard shortcuts (Cmd/Ctrl+K, Escape)
-  - Page transitions
-  - Link navigation
-
-**Production Build Testing:**
-- `npm run build` generates optimized production output
-- `npm run build:search` generates Pagefind search index
-- Output validated in `public/` directory
-- Manual verification before push to main branch
-
-## Testing Gaps
-
-**Untested Areas:**
-- JavaScript functionality (dark mode toggle, search modal, mobile menu)
-  - Files: `layouts/partials/scripts.html`
-  - No unit or integration tests for DOM manipulation
-  - Risk: Browser compatibility issues or event binding failures undetected
-
-- Template rendering logic
-  - Files: `layouts/_default/baseof.html`, `layouts/_default/single.html`, `layouts/_default/list.html`, `layouts/index.html`
-  - No template output validation
-  - Risk: Broken content structure, missing variables
-
-- CSS/Responsive design
-  - Files: `assets/css/main.css`, `tailwind.config.js`
-  - Only manual browser testing
-  - Risk: Breakpoint behavior inconsistencies across devices
-
-- Third-party integrations
-  - Pagefind search indexing and UI
-  - Tailwind typography plugin
-  - No integration tests
-
-**Priority: High** - Critical user interactions (dark mode, search, navigation) have no automated coverage
-
-## Dependencies for Testing
-
-**dev**: Would need to add for testing
-- Testing runner: Jest or Vitest
-- DOM testing: Testing Library or similar
-- Template testing: Hugo template testing library
-- Responsive design testing: Playwright or similar
-
-**Current dev dependencies** (from `package.json`):
+**Current NPM Scripts:**
 ```json
 {
-  "@tailwindcss/typography": "^0.5.10",
-  "autoprefixer": "^10.4.16",
-  "postcss": "^8.4.32",
-  "postcss-cli": "^11.0.0",
-  "tailwindcss": "^3.4.0",
-  "pagefind": "^1.0.4"
+  "dev": "hugo server --buildDrafts --buildFuture",
+  "build": "hugo --minify",
+  "build:search": "npx pagefind --site public"
 }
 ```
 
-## Browser Compatibility
+## Testing Approach
 
-**Testing Requirements:**
-- Dark mode: relies on `localStorage` and `matchMedia()` API
-- Search modal: requires DOM Level 2 Events (`addEventListener`)
-- Mobile menu: uses `classList` API
-- Requires modern browser support (ES6+)
+**Current State:**
+- Manual testing only
+- CI/CD pipeline runs Hugo build and Docker deployment (GitHub Actions)
+- No automated unit, integration, or E2E tests
 
-## CI/CD Testing
+**Hugo Build Validation:**
+- Build process is the primary validation mechanism
+- Static site generation catches template errors at build time
+- Markdown frontmatter validation happens during Hugo processing
 
-**Current Pipeline** (`.github/workflows/deploy.yml`):
-- No test steps configured
-- Direct Docker build → push → deploy on main branch
-- Relies on Hugo build succeeding (syntax validation only)
+## Code Organization for Testing
 
-**Recommended Additions:**
-- Unit tests for JavaScript functions
-- Template snapshot testing
-- Visual regression testing
-- Lighthouse performance audit
+**JavaScript Modules:**
+- `static/js/flow-field-background.js` - Self-contained animation module
+  - Initialization via `init()` function
+  - Module-level variables: `canvas`, `ctx`, `particles`, `noise`, `time`, `mouseX`, `mouseY`, `isAnimating`, `animationFrameId`, `isMobile`
+  - Feature detection guards: `if (typeof window.noise === 'undefined')`
+  - Would require DOM for testing (canvas API, event listeners)
 
-## Docker Build Validation
+- `static/js/perlin.js` - Pure math library (Simplex noise)
+  - IIFE with no external dependencies
+  - Testable functions: `module.seed()`, `module.simplex2()`, `module.simplex3()`, `module.perlin2()`, `module.perlin3()`
+  - No side effects on global state beyond noise module itself
+  - Could be unit tested with basic assertion framework
 
-**Dockerfile (implicit):**
-- Hugo build step validates template syntax
-- Pagefind indexing validates content structure
-- Container startup verifies all assets are accessible
+**HTML Templates:**
+- `layouts/partials/scripts.html` - Inline event handlers
+  - Theme toggle logic
+  - Mobile menu toggle
+  - Search modal handlers
+  - Would require DOM testing
+  - Could extract logic to testable functions
+
+## Testability Gaps
+
+**Current Challenges:**
+1. **DOM Coupling:** Most JavaScript tied directly to DOM selectors (e.g., `document.getElementById('theme-toggle')`)
+2. **Global State:** Module-level variables (canvas, particles, time, mouseX/Y) make isolated testing difficult
+3. **No Dependency Injection:** Hard-coded references to `window`, `document`, `requestAnimationFrame`
+4. **Browser APIs:** Heavy reliance on Canvas API, matchMedia, localStorage
+5. **No Mocking Framework:** Would need to implement mocks for browser APIs
+
+## Potential Testing Strategy
+
+**If Testing Were to Be Implemented:**
+
+**Unit Test Candidates (Perlin Noise):**
+```javascript
+// Pure functions suitable for testing
+- module.simplex2(x, y)
+- module.simplex3(x, y, z)
+- module.perlin2(x, y)
+- module.perlin3(x, y, z)
+- module.seed(seed)
+```
+
+**Integration Test Candidates:**
+- Canvas initialization with DPR handling
+- Particle creation and wrapping at boundaries
+- Flow field angle calculation
+- Mouse interaction detection (distance calculations)
+- Speed limiting algorithm
+
+**E2E Test Candidates (Browser-based):**
+- Theme toggle persists to localStorage
+- Mobile menu open/close
+- Search modal appearance with Cmd/Ctrl+K
+- Reduced motion preference respected
+- Animation starts on visibility change
+
+## Manual Testing Patterns
+
+**Observed Manual Validation:**
+- Visual inspection of animations across devices (mobile vs desktop particles)
+- Dark mode toggle testing (localStorage + classList mutations)
+- Browser console for dependency checking (`typeof window.noise`)
+- System preference detection via `matchMedia`
+
+**Accessibility Testing:**
+- `prefers-reduced-motion` media query support
+- Keyboard shortcuts (Ctrl/Cmd+K for search)
+- ARIA labels on interactive elements
+
+## Performance Considerations
+
+**Performance-Critical Code:**
+- `animate()` loop: requestAnimationFrame to avoid jank
+- `updateParticle()`: Called for each particle every frame - optimized with early returns
+- Speed limiting: Normalizes velocity only when needed
+- Device detection: `matchMedia('(pointer: coarse)')` for mobile particle count reduction
+
+**Delta Time Usage:**
+```javascript
+const currentTime = performance.now();
+const deltaTime = (currentTime - lastTime) / 16.67;
+lastTime = currentTime;
+time += CONFIG.timeIncrement * deltaTime;
+```
+Ensures frame-rate independent animation.
+
+## Build-Time Validation
+
+**Hugo Validation:**
+- Template syntax checked during `hugo build`
+- Shortcodes and template functions validated
+- Markdown metadata validated
+- Asset pipeline processing (CSS PostCSS)
+
+**No Linting/Formatting:**
+- No ESLint configuration
+- No Prettier configuration
+- No Type checking (no TypeScript)
+
+## Deployment Testing
+
+**CI/CD Pipeline (GitHub Actions):**
+- `.github/workflows/*.yml` defines build and deploy process
+- Steps: Docker build → push to container registry → SSH deploy
+- No test step detected - only build verification
+
+## Recommendations for Future Testing
+
+**Low-Hanging Fruit:**
+1. **Add ESLint** - Catch syntax/style issues early
+2. **Extract Logic to Pure Functions** - Separate DOM manipulation from business logic
+3. **Test Perlin Noise Library** - Simplest module to test (pure functions, no dependencies)
+4. **Add Vitest** - Lightweight, ESM-native test runner
+5. **Accessibility Testing** - Automated WCAG checks in CI
+
+**Medium Effort:**
+1. Mock Canvas API for animation testing
+2. Extract theme/menu logic to testable functions
+3. Integration tests for particle system physics
+4. Snapshot tests for HTML layout
+
+**High Effort:**
+1. Full E2E test suite with Playwright or Cypress
+2. Visual regression testing
+3. Performance benchmarking in CI
+4. Accessibility audit automation
 
 ---
 
-*Testing analysis: 2026-01-28*
+*Testing analysis: 2026-01-29*
