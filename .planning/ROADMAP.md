@@ -13,7 +13,7 @@ Transform a basic Hugo blog into a visually distinctive experience through four 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Layout & Typography Foundation** - Readable content structure with optimal line length and sticky footer
-- [ ] **Phase 2: Interactive Background** - Mouse-reactive Perlin noise flow field on canvas
+- [x] **Phase 2: Interactive Background** - Mouse-reactive Perlin noise flow field on canvas
 - [ ] **Phase 3: Comments System** - Self-hosted Isso comments with spam protection
 - [ ] **Phase 4: View Transitions** - Smooth page navigation with native API
 
@@ -48,9 +48,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Core flow field animation with Simplex noise and mouse interaction
-- [ ] 02-02-PLAN.md — Browser optimizations and accessibility (visibility, reduced-motion, mobile)
-- [ ] 02-03-PLAN.md — Visual verification checkpoint
+- [x] 02-01-PLAN.md — Core flow field animation with Simplex noise and mouse interaction
+- [x] 02-02-PLAN.md — Browser optimizations and accessibility (visibility, reduced-motion, mobile)
+- [x] 02-03-PLAN.md — Visual verification checkpoint
 
 ### Phase 3: Comments System
 **Goal**: Visitors can leave guest comments with effective spam prevention
@@ -87,6 +87,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Layout & Typography Foundation | 3/3 | ✓ Complete | 2026-01-29 |
-| 2. Interactive Background | 0/3 | Not started | - |
+| 2. Interactive Background | 3/3 | ✓ Complete | 2026-01-29 |
 | 3. Comments System | 0/TBD | Not started | - |
 | 4. View Transitions | 0/TBD | Not started | - |

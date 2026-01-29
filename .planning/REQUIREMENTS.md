@@ -16,11 +16,11 @@
 
 ### Interactive Background (BG)
 
-- [ ] **BG-01**: Perlin noise flow field renders on canvas behind content
-- [ ] **BG-02**: Particles react to mouse movement
-- [ ] **BG-03**: Animation respects prefers-reduced-motion
-- [ ] **BG-04**: Performance stays smooth (60fps on desktop, 30fps minimum on mobile)
-- [ ] **BG-05**: Animation pauses when tab is not visible (battery optimization)
+- [x] **BG-01**: Perlin noise flow field renders on canvas behind content
+- [x] **BG-02**: Particles react to mouse movement
+- [x] **BG-03**: Animation respects prefers-reduced-motion
+- [x] **BG-04**: Performance stays smooth (60fps on desktop, 30fps minimum on mobile)
+- [x] **BG-05**: Animation pauses when tab is not visible (battery optimization)
 
 ### Comments (COMM)
 
@@ -68,11 +68,11 @@
 | LAYOUT-04 | Phase 1 | Complete |
 | LAYOUT-05 | Phase 1 | Complete |
 | LAYOUT-06 | Phase 1 | Complete |
-| BG-01 | Phase 2 | Pending |
-| BG-02 | Phase 2 | Pending |
-| BG-03 | Phase 2 | Pending |
-| BG-04 | Phase 2 | Pending |
-| BG-05 | Phase 2 | Pending |
+| BG-01 | Phase 2 | Complete |
+| BG-02 | Phase 2 | Complete |
+| BG-03 | Phase 2 | Complete |
+| BG-04 | Phase 2 | Complete |
+| BG-05 | Phase 2 | Complete |
 | COMM-01 | Phase 3 | Pending |
 | COMM-02 | Phase 3 | Pending |
 | COMM-03 | Phase 3 | Pending |
