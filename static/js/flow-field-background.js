@@ -1,20 +1,20 @@
 const CONFIG = {
-  particleCount: 150,
-  mobileParticleCount: 60,
+  particleCount: 80,
+  mobileParticleCount: 40,
   particleSize: 2,
   mobileParticleSize: 3,
   particleColor: '#6366f1',
-  particleAlpha: 0.6,
+  particleAlpha: 0.5,
   noiseScale: 0.005,
   noiseStrength: 0.3,
   timeIncrement: 0.001,
   mouseRadius: 120,
   mouseStrength: 3,
   maxSpeed: 2,
-  trailFade: 0.08,
+  trailFade: 0.15,
   particleMaxAge: 500,
-  bgLight: 'rgba(255, 255, 255, 0.08)',
-  bgDark: 'rgba(15, 23, 42, 0.08)'
+  bgLight: 'rgba(255, 255, 255, 0.15)',
+  bgDark: 'rgba(15, 23, 42, 0.15)'
 };
 
 let canvas, ctx, particles, noise;
