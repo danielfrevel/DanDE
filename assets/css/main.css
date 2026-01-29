@@ -37,4 +37,29 @@
   mark {
     @apply bg-yellow-200 dark:bg-yellow-800 rounded px-0.5;
   }
+
+  /* Reduced motion fallback - static gradient background */
+  body.static-background::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(99, 102, 241, 0.03) 0%,
+      rgba(139, 92, 246, 0.05) 50%,
+      rgba(99, 102, 241, 0.03) 100%
+    );
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .dark body.static-background::before,
+  body.static-background.dark::before {
+    background: linear-gradient(
+      135deg,
+      rgba(99, 102, 241, 0.08) 0%,
+      rgba(139, 92, 246, 0.1) 50%,
+      rgba(99, 102, 241, 0.08) 100%
+    );
+  }
 }

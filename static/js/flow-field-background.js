@@ -192,6 +192,26 @@ function init() {
     return;
   }
 
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (prefersReducedMotion.matches) {
+    document.body.classList.add('static-background');
+    return;
+  }
+
+  prefersReducedMotion.addEventListener('change', (e) => {
+    if (e.matches) {
+      stopAnimation();
+      if (canvas) canvas.remove();
+      document.body.classList.add('static-background');
+    } else {
+      document.body.classList.remove('static-background');
+      setupCanvas();
+      createParticles();
+      startAnimation();
+    }
+  });
+
   isMobile = window.matchMedia('(pointer: coarse)').matches;
 
   noise = window.noise;
