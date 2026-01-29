@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-01-28)
 ## Current Position
 
 Phase: 1 of 4 (Layout & Typography Foundation)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-01-29 — Completed 01-01-PLAN.md (Typography & Layout Foundation)
+Last activity: 2026-01-29 — Completed 01-02-PLAN.md (Variable Fonts & Light-Default Theme)
 
-Progress: [█░░░░░░░░░] ~10%
+Progress: [██░░░░░░░░] ~20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 1.3 min
-- Total execution time: 0.02 hours
+- Total plans completed: 2
+- Average duration: 2.2 min
+- Total execution time: 0.07 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 1 | 1.3min | 1.3min |
+| 01 | 2 | 4.3min | 2.2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (1.3min)
+- Last 5 plans: 01-01 (1.3min), 01-02 (3min)
 - Trend: Baseline
 
 *Updated after each plan completion*
@@ -47,6 +47,8 @@ Recent decisions affecting current work:
 - 65ch max-width for prose content (optimal line length 50-75 chars) [01-01]
 - Flexbox sticky footer over absolute positioning [01-01]
 - CSS clamp() for fluid font sizes over breakpoint-based sizing [01-01]
+- Variable fonts reduce HTTP requests (one file vs multiple weights) [01-02]
+- System dark mode preference honored for new visitors [01-02]
 
 ### Pending Todos
 
@@ -58,6 +60,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T00:17:15Z
-Stopped at: Completed 01-01-PLAN.md (Typography & Layout Foundation)
+Last session: 2026-01-29T00:18:53Z
+Stopped at: Completed 01-02-PLAN.md (Variable Fonts & Light-Default Theme)
 Resume file: None
