@@ -15,15 +15,15 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-gray-800;
+    @apply bg-amber-100 dark:bg-slate-800;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-600 rounded;
+    @apply bg-stone-300 dark:bg-slate-600 rounded;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-gray-500;
+    @apply bg-stone-400 dark:bg-slate-500;
   }
 }
 
@@ -35,7 +35,7 @@
 
   /* Search highlight */
   mark {
-    @apply bg-yellow-200 dark:bg-yellow-800 rounded px-0.5;
+    @apply bg-amber-200 dark:bg-amber-800 rounded px-0.5;
   }
 
   /* Reduced motion fallback - static gradient background */
@@ -45,9 +45,9 @@
     inset: 0;
     background: linear-gradient(
       135deg,
-      rgba(99, 102, 241, 0.03) 0%,
-      rgba(139, 92, 246, 0.05) 50%,
-      rgba(99, 102, 241, 0.03) 100%
+      rgba(245, 158, 11, 0.03) 0%,
+      rgba(217, 119, 6, 0.05) 50%,
+      rgba(245, 158, 11, 0.03) 100%
     );
     z-index: -1;
     pointer-events: none;
@@ -57,9 +57,9 @@
   body.static-background.dark::before {
     background: linear-gradient(
       135deg,
-      rgba(99, 102, 241, 0.08) 0%,
-      rgba(139, 92, 246, 0.1) 50%,
-      rgba(99, 102, 241, 0.08) 100%
+      rgba(245, 158, 11, 0.08) 0%,
+      rgba(217, 119, 6, 0.1) 50%,
+      rgba(245, 158, 11, 0.08) 100%
     );
   }
 }
