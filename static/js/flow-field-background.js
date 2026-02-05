@@ -97,8 +97,8 @@ function updateParticle(particle, deltaTime) {
   const fx = Math.cos(angle) * CONFIG.noiseStrength;
   const fy = Math.sin(angle) * CONFIG.noiseStrength;
 
-  particle.vx += fx;
-  particle.vy += fy;
+  particle.vx += fx * deltaTime;
+  particle.vy += fy * deltaTime;
 
   const dx = particle.x - mouseX;
   const dy = particle.y - mouseY;
@@ -108,8 +108,8 @@ function updateParticle(particle, deltaTime) {
   if (distSq < radiusSq && distSq > 0) {
     const dist = Math.sqrt(distSq);
     const force = (1 - dist / CONFIG.mouseRadius) * CONFIG.mouseStrength;
-    particle.vx += (dx / dist) * force;
-    particle.vy += (dy / dist) * force;
+    particle.vx += (dx / dist) * force * deltaTime;
+    particle.vy += (dy / dist) * force * deltaTime;
   }
 
   const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
@@ -118,16 +118,17 @@ function updateParticle(particle, deltaTime) {
     particle.vy = (particle.vy / speed) * CONFIG.maxSpeed;
   }
 
-  particle.x += particle.vx;
-  particle.y += particle.vy;
+  particle.x += particle.vx * deltaTime;
+  particle.y += particle.vy * deltaTime;
 
   if (particle.x < 0) particle.x = window.innerWidth;
   if (particle.x > window.innerWidth) particle.x = 0;
   if (particle.y < 0) particle.y = window.innerHeight;
   if (particle.y > window.innerHeight) particle.y = 0;
 
-  particle.vx *= 0.98;
-  particle.vy *= 0.98;
+  const friction = Math.pow(0.98, deltaTime);
+  particle.vx *= friction;
+  particle.vy *= friction;
 }
 
 function drawParticle(particle) {
