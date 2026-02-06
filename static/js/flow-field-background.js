@@ -151,7 +151,7 @@ function animate() {
   animationFrameId = requestAnimationFrame(animate);
 
   const currentTime = performance.now();
-  const deltaTime = (currentTime - lastTime) / 16.67;
+  const deltaTime = Math.min((currentTime - lastTime) / 16.67, 3);
   lastTime = currentTime;
 
   time += CONFIG.timeIncrement * deltaTime;

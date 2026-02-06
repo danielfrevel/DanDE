@@ -1,6 +1,6 @@
 baseURL = "https://blog.danfrevel.de/"
 languageCode = "en-us"
-title = "My Blog"
+title = "Dan's Blog"
 
 # Pagination
 [pagination]
@@ -11,8 +11,8 @@ title = "My Blog"
   home = ["HTML", "RSS"]
 
 [params]
-  description = "A personal blog about technology and life"
-  author = "Your Name"
+  description = "Writing about Nix, C#, Angular, and whatever else I'm debugging."
+  author = "Dan Frevel"
 
 # Syntax highlighting with Chroma
 [markup]

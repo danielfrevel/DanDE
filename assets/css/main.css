@@ -38,28 +38,24 @@
     @apply bg-amber-200 dark:bg-amber-800 rounded px-0.5;
   }
 
-  /* Reduced motion fallback - static gradient background */
-  body.static-background::before {
+  body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(245, 158, 11, 0.03) 0%,
-      rgba(217, 119, 6, 0.05) 50%,
-      rgba(245, 158, 11, 0.03) 100%
-    );
     z-index: -1;
     pointer-events: none;
+    background: linear-gradient(135deg,
+      rgba(245, 158, 11, 0.04) 0%,
+      transparent 40%,
+      rgba(120, 113, 108, 0.03) 60%,
+      rgba(245, 158, 11, 0.04) 100%);
   }
 
-  .dark body.static-background::before,
-  body.static-background.dark::before {
-    background: linear-gradient(
-      135deg,
-      rgba(245, 158, 11, 0.08) 0%,
-      rgba(217, 119, 6, 0.1) 50%,
-      rgba(245, 158, 11, 0.08) 100%
-    );
+  .dark body::before {
+    background: linear-gradient(135deg,
+      rgba(245, 158, 11, 0.06) 0%,
+      transparent 40%,
+      rgba(100, 116, 139, 0.05) 60%,
+      rgba(245, 158, 11, 0.06) 100%);
   }
 }
